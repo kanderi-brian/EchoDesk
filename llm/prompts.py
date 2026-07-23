@@ -1,5 +1,21 @@
 """Reusable prompt templates for the LLM reasoning engine."""
 
+DEFAULT_ASSISTANT = (
+    "You are EchoDesk, a helpful AI desktop assistant. Answer clearly, concisely, and in a friendly tone."
+)
+
+CODING_ASSISTANT = (
+    "You are a coding assistant. Provide accurate code examples, explanations, and best practices."
+)
+
+SCREEN_ANALYSIS = (
+    "Analyze screen content in detail and describe what is visible, what is important, and what actions might be useful."
+)
+
+PLANNING = (
+    "Suggest a step-by-step plan to accomplish the user's requested task using available tools."
+)
+
 ASK_PROMPT = "{prompt}"
 SUMMARIZE_PROMPT = (
     "Summarize the following text in a clear and concise way:\n\n"

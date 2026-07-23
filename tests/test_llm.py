@@ -1,9 +1,6 @@
 import json
-import socket
 import unittest
-from io import BytesIO
-from urllib.error import URLError
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from llm.engine import LLMEngine
 from llm.ollama_provider import OllamaProvider
@@ -17,21 +14,6 @@ class DummyProvider(BaseLLMProvider):
     def generate(self, prompt: str) -> str:
         self.prompts.append(prompt)
         return f"Echo: {prompt}"
-
-
-class FakeResponse:
-    def __init__(self, data: bytes, status=200):
-        self._data = data
-        self.status = status
-
-    def read(self):
-        return self._data
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc, traceback):
-        return False
 
 
 class TestLLMEngine(unittest.TestCase):
@@ -70,38 +52,47 @@ class TestLLMEngine(unittest.TestCase):
 
 
 class TestOllamaProvider(unittest.TestCase):
-    @patch("llm.ollama_provider.urlopen")
-    def test_generate_returns_response_text(self, mock_urlopen):
-        payload = json.dumps({"text": "hello"}).encode("utf-8")
-        mock_urlopen.return_value = FakeResponse(payload)
+    @patch("llm.ollama_provider.requests.post")
+    def test_generate_returns_response_text(self, mock_post):
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {"text": "hello"}
+        mock_post.return_value = mock_response
 
         provider = OllamaProvider()
         output = provider.generate("test prompt")
 
         self.assertEqual(output, "hello")
+        mock_post.assert_called_once()
 
-    @patch("llm.ollama_provider.urlopen")
-    def test_generate_handles_invalid_json(self, mock_urlopen):
-        payload = b"not json"
-        mock_urlopen.return_value = FakeResponse(payload)
+    @patch("llm.ollama_provider.requests.post")
+    def test_generate_handles_invalid_json(self, mock_post):
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.side_effect = ValueError("Invalid JSON")
+        mock_post.return_value = mock_response
 
         provider = OllamaProvider()
         output = provider.generate("test prompt")
 
-        self.assertIn("invalid JSON", output)
+        self.assertIn("invalid json", output.lower())
 
-    @patch("llm.ollama_provider.urlopen")
-    def test_generate_handles_timeout(self, mock_urlopen):
-        mock_urlopen.side_effect = URLError(socket.timeout("timed out"))
+    @patch("llm.ollama_provider.requests.post")
+    def test_generate_handles_timeout(self, mock_post):
+        from requests.exceptions import Timeout
+
+        mock_post.side_effect = Timeout("timed out")
 
         provider = OllamaProvider()
         output = provider.generate("test prompt")
 
         self.assertIn("timeout error", output.lower())
 
-    @patch("llm.ollama_provider.urlopen")
-    def test_generate_handles_connection_error(self, mock_urlopen):
-        mock_urlopen.side_effect = URLError("connection refused")
+    @patch("llm.ollama_provider.requests.post")
+    def test_generate_handles_connection_error(self, mock_post):
+        from requests.exceptions import ConnectionError
+
+        mock_post.side_effect = ConnectionError("connection refused")
 
         provider = OllamaProvider()
         output = provider.generate("test prompt")

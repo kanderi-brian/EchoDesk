@@ -1,3 +1,6 @@
+from typing import Optional
+
+from .ollama_provider import OllamaProvider
 from .provider import BaseLLMProvider
 from .prompts import ASK_PROMPT, EXPLAIN_PROMPT, REASON_PROMPT, SUMMARIZE_PROMPT
 
@@ -5,7 +8,9 @@ from .prompts import ASK_PROMPT, EXPLAIN_PROMPT, REASON_PROMPT, SUMMARIZE_PROMPT
 class LLMEngine:
     """Modular reasoning engine that delegates generation to an LLM provider."""
 
-    def __init__(self, provider: BaseLLMProvider):
+    def __init__(self, provider: Optional[BaseLLMProvider] = None):
+        if provider is None:
+            provider = OllamaProvider()
         self.provider = provider
 
     def ask(self, prompt: str) -> str:

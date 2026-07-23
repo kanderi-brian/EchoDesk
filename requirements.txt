@@ -1,3 +1,4 @@
 PySide6>=6.7.0
 mss>=9.0.0
 Pillow>=10.4.0
+requests>=2.0.0
