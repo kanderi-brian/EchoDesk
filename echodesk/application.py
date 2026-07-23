@@ -134,8 +134,9 @@ class EchoDesk:
             # Memory subsystem
             self._initialize_memory()
             
-            # Knowledge and LLM
+            # Knowledge, internet, and LLM
             self._initialize_knowledge()
+            self._initialize_internet()
             self._initialize_llm()
             
             # Vision subsystem
@@ -262,7 +263,7 @@ class EchoDesk:
                 tool_registry["KnowledgeEngine"] = self.knowledge_engine
             
             self.execution_executor = ExecutionStepExecutor(tool_registry)
-            self.execution_engine = ExecutionEngine()
+            self.execution_engine = ExecutionEngine(step_executor=self.execution_executor)
             self.logger.info("Execution engines initialized.")
         except Exception as e:
             self.logger.warning(f"Execution engine initialization failed: {e}")
@@ -279,7 +280,14 @@ class EchoDesk:
     def _initialize_brain(self) -> None:
         """Initialize the brain (central processor)."""
         try:
-            self.brain = EchoBrain(memory_controller=self.memory_controller)
+            self.brain = EchoBrain(
+                memory_controller=self.memory_controller,
+                knowledge_engine=self.knowledge_engine,
+                internet_engine=self.internet_engine,
+                llm_engine=self.llm_engine,
+                desktop_controller=self.desktop_controller,
+                context_engine=self.context_engine,
+            )
             self.logger.info("Brain initialized.")
         except Exception as e:
             self.logger.warning(f"Brain initialization failed: {e}")

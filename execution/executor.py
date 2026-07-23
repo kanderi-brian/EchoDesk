@@ -33,8 +33,13 @@ class ExecutionStepExecutor:
             return {"success": False, "message": f"Method '{method_name}' not found on tool '{tool_name}'."}
 
         try:
-            if action in ("capture screen", "analyze image", "return summary"):
+            if action in ("capture screen", "analyze image"):
                 return method()
+
+            if action == "return summary":
+                if hasattr(self.tool_registry.get("LLMEngine"), "ask"):
+                    return method(step.description)
+                return {"success": False, "message": "LLM engine unavailable for summary."}
 
             if action == "wait":
                 duration = str(step.tool or "").strip()
@@ -43,6 +48,19 @@ class ExecutionStepExecutor:
                 return {"success": True, "message": f"Skipped wait step with non-numeric duration: {step.description}."}
 
             if action in ("launch application", "open website", "type text", "press key", "hotkey", "move mouse", "click mouse", "scroll"):
+                return method(step.tool)
+
+            if action == "search internet" or action == "search website":
+                return method(step.tool)
+
+            if action in ("summarize results", "recommend fix", "summarize page"):
+                prompt = f"{step.description}\nDetails: {step.tool or ''}".strip()
+                return method(prompt)
+
+            if action == "capture memory":
+                return method(step.tool, step.description)
+
+            if action == "verify memory":
                 return method(step.tool)
 
             # Default to passing the step payload when possible.
@@ -65,7 +83,14 @@ class ExecutionStepExecutor:
             "scroll": ("AutomationEngine", "scroll"),
             "capture screen": ("Vision", "read_screen"),
             "analyze image": ("Vision", "read_screen"),
-            "return summary": ("Vision", "read_screen"),
+            "return summary": ("LLMEngine", "ask"),
+            "search internet": ("InternetEngine", "search"),
+            "search website": ("InternetEngine", "search"),
+            "summarize results": ("LLMEngine", "ask"),
+            "recommend fix": ("LLMEngine", "ask"),
+            "verify memory": ("MemoryEngine", "retrieve_fact"),
+            "capture memory": ("MemoryEngine", "remember_fact"),
+            "summarize page": ("LLMEngine", "ask"),
         }
 
         for key, value in mappings.items():

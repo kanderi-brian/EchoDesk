@@ -109,8 +109,34 @@ class TestExecutionEngine(unittest.TestCase):
         self.assertTrue(result.success)
         self.assertEqual(result.completed_steps, 1)
         self.assertEqual(executor.step_executor.call_count, 2)
+        self.assertEqual(result.retry_attempts, 1)
+        self.assertIn("recovered", " ".join(result.recovered_failures).lower())
 
-    def test_pause_and_resume_toggles_state(self):
+    def test_skip_current_step_continues_execution(self):
+        plan = self.make_plan(2)
+        plan.steps[0].status = "failed"
+        executor = ExecutionEngine(step_executor=DummyStepExecutor([
+            {"success": True, "message": "ok2"},
+        ]))
+
+        executor.current_plan = plan
+        skip_result = executor.skip_current_step()
+
+        self.assertTrue(skip_result["success"])
+        self.assertEqual(plan.steps[0].status, "skipped")
+
+    def test_execution_summary_includes_step_counts(self):
+        plan = self.make_plan(2, optional_flags=[False, True])
+        executor = ExecutionEngine(step_executor=DummyStepExecutor([
+            {"success": True, "message": "ok1"},
+            {"success": False, "message": "optional fail"},
+        ]))
+
+        result = executor.execute_plan(plan, max_retries=0)
+        self.assertTrue(result.success)
+        self.assertIn("Completed steps: 1", result.output)
+        self.assertIn("Skipped steps: 1", result.output)
+        self.assertIn("Failed steps: 0", result.output)
         executor = ExecutionEngine(step_executor=DummyStepExecutor([]))
         self.assertFalse(executor.is_paused)
         executor.pause_execution()

@@ -404,6 +404,46 @@
             "time": "2026-07-22 21:29:34.042258",
             "user": "hello",
             "EchoDesk": "I don't know that yet. Soon I'll be able to search AI or the web."
+        },
+        {
+            "time": "2026-07-23 18:00:35.527807",
+            "user": "Explain recursion.",
+            "EchoDesk": "The AI assistant is unavailable right now. Please try again later."
+        },
+        {
+            "time": "2026-07-23 18:00:35.583722",
+            "user": "remember Buy milk",
+            "EchoDesk": "I'll remember that Buy milk."
+        },
+        {
+            "time": "2026-07-23 18:00:35.639869",
+            "user": "What happened in AI today?",
+            "EchoDesk": "Internet search summary."
+        },
+        {
+            "time": "2026-07-23 18:00:35.686923",
+            "user": "Explain recursion.",
+            "EchoDesk": "An explanation from the LLM."
+        },
+        {
+            "time": "2026-07-23 18:00:35.733969",
+            "user": "hello",
+            "EchoDesk": "Hello from the LLM."
+        },
+        {
+            "time": "2026-07-23 18:00:35.783753",
+            "user": "Read the error on my screen.",
+            "EchoDesk": "Screen analysis result."
+        },
+        {
+            "time": "2026-07-23 18:00:35.860984",
+            "user": "hello",
+            "EchoDesk": "Answer from LLM."
+        },
+        {
+            "time": "2026-07-23 18:00:35.912634",
+            "user": "hello",
+            "EchoDesk": "Hello from the LLM."
         }
     ],
     "facts": [

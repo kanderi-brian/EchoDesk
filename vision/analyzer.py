@@ -9,13 +9,16 @@ from .screen_context import ScreenContext
 class ScreenAnalyzer:
     """Converts OCR text into a structured screen context and natural explanation."""
 
-    def __init__(self, llm_engine: Optional[LLMEngine] = None):
-        self.llm_engine = llm_engine
-        if self.llm_engine is None:
+    _NO_ENGINE = object()
+
+    def __init__(self, llm_engine: Optional[LLMEngine] = _NO_ENGINE):
+        if llm_engine is self._NO_ENGINE:
             try:
                 self.llm_engine = LLMEngine(OllamaProvider())
             except Exception:
                 self.llm_engine = None
+        else:
+            self.llm_engine = llm_engine
 
     def analyze(self, text):
         if not text or text == "No text detected.":

@@ -11,6 +11,8 @@ class ExecutionResult:
     failed_step: Any = None
     error: str | None = None
     output: Any = None
+    recovered_failures: list[str] = field(default_factory=list)
+    retry_attempts: int = 0
     started_at: datetime | None = None
     finished_at: datetime | None = None
     execution_time: float | None = None

@@ -11,7 +11,7 @@ class OllamaProvider(BaseLLMProvider):
         self,
         model: str = "phi3:latest",
         endpoint: str = "http://localhost:11434/api/generate",
-        timeout: int = 120,
+        timeout: int = 300,
     ):
         self.model = model
         self.endpoint = endpoint

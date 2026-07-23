@@ -14,6 +14,11 @@ class PlanStep:
     expected_result: str
     optional: bool = False
     status: str = "pending"
+    engine: str = "unknown"
+    retry_count: int = 0
+    dependencies: list[str] = field(default_factory=list)
+    duration: float | None = None
+    result: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -24,6 +29,11 @@ class PlanStep:
             "expected_result": self.expected_result,
             "optional": self.optional,
             "status": self.status,
+            "engine": self.engine,
+            "retry_count": self.retry_count,
+            "dependencies": list(self.dependencies),
+            "duration": self.duration,
+            "result": self.result,
         }
 
 
@@ -191,6 +201,20 @@ class PlannerEngine:
             expected_result=expected_result,
         )
         return plan
+
+    def _infer_engine(self, action: str) -> str:
+        action = action.strip().lower()
+        if any(keyword in action for keyword in ("launch application", "open website", "wait", "type text", "press key", "hotkey", "move mouse", "click mouse", "scroll")):
+            return "AutomationEngine"
+        if any(keyword in action for keyword in ("capture screen", "analyze image", "return summary", "read screen", "screen")):
+            return "Vision"
+        if "search internet" in action or "search website" in action or "search" in action and "internet" in action:
+            return "InternetEngine"
+        if any(keyword in action for keyword in ("summarize", "recommend fix", "resolve", "explain")):
+            return "LLMEngine"
+        if any(keyword in action for keyword in ("memory", "remember", "verify memory")):
+            return "MemoryEngine"
+        return "Unknown"
 
     def _infer_reasoning(self, command: str, steps: list[dict[str, str]]) -> str:
         return f"Break the goal into the necessary actions to satisfy: {command.strip()}."
@@ -503,6 +527,7 @@ class PlannerEngine:
             description=description,
             expected_result=expected_result or description,
             optional=optional,
+            engine=self._infer_engine(action),
         )
 
     def _format_step(self, step: PlanStep | dict[str, str]) -> str:

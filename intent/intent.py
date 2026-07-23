@@ -1,6 +1,7 @@
 
 
 
+import re
 from typing import Any
 
 from agent.agent import Agent
@@ -47,6 +48,8 @@ class IntentEngine:
         "internet",
         "web",
         "news",
+        "today",
+        "happened",
         "weather",
         "forecast",
         "capital",
@@ -144,7 +147,7 @@ class TaskExecutor:
 
         if command:
             self.tool_manager.execute("ContextEngine", "add_user_message", command)
-            if normalized not in ("continue", "history", "time", "screenshot"):
+            if normalized not in ("continue", "resume", "cancel", "cancel execution", "retry", "skip", "history", "time", "screenshot"):
                 self.tool_manager.execute("ContextEngine", "set_goal", command)
 
         if normalized == "history":
@@ -153,10 +156,25 @@ class TaskExecutor:
         if normalized == "screenshot":
             return "screenshot"
 
-        if normalized == "continue":
-            return "knowledge"
+        if normalized in ("continue", "resume"):
+            return "resume_execution"
 
-        if normalized == "time" or "time" in normalized:
+        if normalized in ("cancel", "cancel execution"):
+            return "cancel_execution"
+
+        if normalized.startswith("retry"):
+            return "retry_step"
+
+        if normalized.startswith("skip"):
+            return "skip_step"
+
+        if (
+            normalized == "time"
+            or re.search(r"\bwhat time\b", normalized)
+            or re.search(r"\btime is it\b", normalized)
+            or normalized.startswith("current time")
+            or normalized.startswith("local time")
+        ):
             return "time"
 
         category = self.intent_engine.classify(command)

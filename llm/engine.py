@@ -2,7 +2,7 @@ from typing import Optional
 
 from .ollama_provider import OllamaProvider
 from .provider import BaseLLMProvider
-from .prompts import ASK_PROMPT, EXPLAIN_PROMPT, REASON_PROMPT, SUMMARIZE_PROMPT
+from .prompts import ASK_PROMPT, CONTEXT_PROMPT, EXPLAIN_PROMPT, REASON_PROMPT, SUMMARIZE_PROMPT
 
 
 class LLMEngine:
@@ -13,9 +13,12 @@ class LLMEngine:
             provider = OllamaProvider()
         self.provider = provider
 
-    def ask(self, prompt: str) -> str:
+    def ask(self, prompt: str, context: str | None = None) -> str:
         """Ask the provider a direct prompt and return its response."""
-        full_prompt = ASK_PROMPT.format(prompt=prompt)
+        if context and isinstance(context, str) and context.strip():
+            full_prompt = CONTEXT_PROMPT.format(context=context.strip(), prompt=prompt)
+        else:
+            full_prompt = ASK_PROMPT.format(prompt=prompt)
         return self.provider.generate(full_prompt)
 
     def summarize(self, text: str) -> str:

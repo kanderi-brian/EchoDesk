@@ -19,6 +19,8 @@ class TestPlanner(unittest.TestCase):
         self.assertEqual(step.expected_result, "Chrome opens.")
         self.assertFalse(step.optional)
         self.assertIsInstance(step.to_dict(), dict)
+        self.assertIn("engine", step.to_dict())
+        self.assertEqual(step.to_dict()["retry_count"], 0)
 
         plan = ExecutionPlan(goal="Open Chrome")
         self.assertTrue(plan.is_complete())

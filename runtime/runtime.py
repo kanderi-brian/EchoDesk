@@ -96,6 +96,13 @@ class RuntimeEngine:
     def _process_command(self, command: str) -> None:
         """Process a user command through the established EchoDesk flow."""
         with self._lock:
+            if self.context_engine is not None:
+                try:
+                    self.context_engine.expire_context()
+                    self.context_engine.add_user_message(command)
+                except Exception:
+                    pass
+
             route = self.router.route(command)
             response = self._execute_route(command, route)
             self._update_memory_engine(command, response)
@@ -127,8 +134,26 @@ class RuntimeEngine:
             if isinstance(route, dict) and route.get("route") == "execute_plan":
                 return self._execute_plan(route.get("plan"))
 
+            if route == "resume_execution":
+                return self._resume_execution()
+
+            if route == "cancel_execution":
+                return self._cancel_execution()
+
+            if route == "retry_step":
+                return self._retry_execution_step()
+
+            if route == "skip_step":
+                return self._skip_execution_step()
+
             if route == "greeting":
-                return "Hello! I am EchoDesk. How can I help you?"
+                llm_engine = self.tool_manager.get_tool("LLMEngine")
+                if llm_engine is not None:
+                    try:
+                        return self._ask_llm_with_context(llm_engine, command)
+                    except Exception:
+                        return "The AI assistant is unavailable right now. Please try again later."
+                return "I don't understand that request yet."
 
             if route == "time":
                 now = datetime.datetime.now()
@@ -157,16 +182,80 @@ class RuntimeEngine:
             if route == "knowledge":
                 knowledge_result = self.knowledge_engine.search(command)
                 if knowledge_result is not None:
-                   if isinstance(knowledge_result, dict):
-                       return knowledge_result.get("message", str(knowledge_result))
-                   return str(knowledge_result)
+                    if isinstance(knowledge_result, dict):
+                        return knowledge_result.get("message", str(knowledge_result))
+                    return str(knowledge_result)
 
-                internet_result = self.internet_engine.search(command)
-                return str(internet_result)
+                if self.internet_engine is not None:
+                    internet_result = self.internet_engine.search(command)
+                    if internet_result:
+                        return str(internet_result)
+
+                llm_engine = self.tool_manager.get_tool("LLMEngine")
+                if llm_engine is not None:
+                    try:
+                        return self._ask_llm_with_context(llm_engine, command)
+                    except Exception:
+                        pass
+
+                return "I don't understand that request yet."
+ 
+            llm_engine = self.tool_manager.get_tool("LLMEngine")
+            if llm_engine is not None:
+                try:
+                    return self._ask_llm_with_context(llm_engine, command)
+                except Exception:
+                    pass
 
             return "I don't understand that request yet."
         except Exception as exc:
             return f"An error occurred while executing the request: {exc}"
+
+    def _ask_llm_with_context(self, llm_engine: Any, command: str) -> str:
+        context = self._build_context_prompt(command)
+        if context is None:
+            return llm_engine.ask(command)
+
+        try:
+            return llm_engine.ask(command, context=context)
+        except TypeError:
+            return llm_engine.ask(command)
+
+    def _build_context_prompt(self, command: str) -> str | None:
+        if self.context_engine is None:
+            return None
+
+        lines = []
+        active_app = self.context_engine.get_active_application().get("result")
+        active_doc = self.context_engine.get_active_document().get("result")
+        active_project = self.context_engine.get_active_project().get("result")
+        pending = self.context_engine.get_pending_tasks().get("result")
+        previous_response = self.context_engine.get_previous_assistant_response().get("result")
+
+        if active_app:
+            lines.append(f"Active application: {active_app}")
+        if active_project:
+            lines.append(f"Active project: {active_project}")
+        if active_doc:
+            lines.append(f"Active document: {active_doc}")
+        if pending:
+            lines.append(f"Pending tasks: {pending}")
+        if previous_response:
+            lines.append(f"Previous assistant response: {previous_response}")
+
+        history = self.context_engine.get_recent_history().get("result") or []
+        if history:
+            recent_history = history[-4:]
+            formatted = []
+            for message in recent_history:
+                role = message.get("role")
+                text = message.get("message")
+                if role and text:
+                    formatted.append(f"{role}: {text}")
+            if formatted:
+                lines.append("Recent conversation:\n" + "\n".join(formatted))
+
+        return "\n\n".join(lines) if lines else None
 
     def _execute_plan(self, plan: Any) -> str:
        """Execute an ExecutionPlan using the shared ExecutionEngine."""
@@ -178,7 +267,16 @@ class RuntimeEngine:
            return "Execution engine is not available."
 
        try:
+           if self.context_engine is not None:
+               self.context_engine.set_execution_plan(plan)
+
            result = execution_engine.execute_plan(plan)
+
+           if self.context_engine is not None:
+               for step in plan.steps:
+                   if step.status in ("completed", "skipped"):
+                       self.context_engine.complete_task(step.description)
+
            if hasattr(result, "success") and result.success:
                if result.output is not None:
                    return str(result.output)
@@ -190,6 +288,61 @@ class RuntimeEngine:
            return "Execution failed due to an unknown error."
        except Exception as exc:
            return f"Execution failed with an exception: {type(exc).__name__}: {exc}"
+
+    def _resume_execution(self) -> str:
+       execution_engine = self.tool_manager.get_tool("ExecutionEngine")
+       if execution_engine is None:
+           return "Execution engine is not available."
+
+       if getattr(execution_engine, "is_paused", False):
+           execution_engine.resume_execution()
+           return "Execution resumed."
+
+       current_plan = getattr(execution_engine, "current_plan", None)
+       if current_plan is not None and not current_plan.is_complete():
+           result = execution_engine.execute_plan(current_plan)
+           return str(result.output) if result.output is not None else "Execution continued."
+
+       return "There is no paused or pending execution plan to continue."
+
+    def _cancel_execution(self) -> str:
+       execution_engine = self.tool_manager.get_tool("ExecutionEngine")
+       if execution_engine is None:
+           return "Execution engine is not available."
+
+       execution_engine.cancel_execution()
+       return "Execution cancelled."
+
+    def _retry_execution_step(self) -> str:
+       execution_engine = self.tool_manager.get_tool("ExecutionEngine")
+       if execution_engine is None:
+           return "Execution engine is not available."
+
+       result = execution_engine.retry_step()
+       if result.get("success"):
+           current_plan = getattr(execution_engine, "current_plan", None)
+           if current_plan is not None and not current_plan.is_complete():
+               follow_on = execution_engine.execute_plan(current_plan)
+               return str(follow_on.output) if follow_on.output is not None else "Retry succeeded and execution continued."
+           return "Retry succeeded."
+
+       return result.get("message", "Retry failed.")
+
+    def _skip_execution_step(self) -> str:
+       execution_engine = self.tool_manager.get_tool("ExecutionEngine")
+       if execution_engine is None:
+           return "Execution engine is not available."
+
+       skip_result = execution_engine.skip_current_step()
+       if not skip_result.get("success"):
+           return skip_result.get("message", "Unable to skip the current step.")
+
+       current_plan = getattr(execution_engine, "current_plan", None)
+       if current_plan is not None and not current_plan.is_complete():
+           follow_on = execution_engine.execute_plan(current_plan)
+           return str(follow_on.output) if follow_on.output is not None else "Step skipped and execution continued."
+
+       return skip_result.get("message", "Step skipped.")
 
     def _help_text(self) -> str:
         lines = ["EchoDesk Runtime commands:"]
@@ -235,6 +388,8 @@ class RuntimeEngine:
         print(f"  Completed tasks: {status.get('completed_tasks', [])}")
         print(f"  Active application: {status.get('active_application', 'none')}")
         print(f"  Active document: {status.get('active_document', 'none')}")
+        print(f"  Active project: {status.get('active_project', 'none')}")
+        print(f"  Recent files: {', '.join(status.get('recent_files', []))}")
 
     def get_status_summary(self) -> dict[str, Any]:
         with self._lock:
@@ -302,12 +457,16 @@ class RuntimeEngine:
             completed = self.context_engine.get_completed_tasks().get("result")
             active_app = self.context_engine.get_active_application().get("result")
             active_doc = self.context_engine.get_active_document().get("result")
+            active_project = self.context_engine.get_active_project().get("result")
+            recent_files = self.context_engine.get_recent_files().get("result")
             return {
                 "current_goal": goal or "none",
                 "pending_tasks": pending or [],
                 "completed_tasks": completed or [],
                 "active_application": active_app or "none",
                 "active_document": active_doc or "none",
+                "active_project": active_project or "none",
+                "recent_files": recent_files or [],
             }
         except Exception:
             return {

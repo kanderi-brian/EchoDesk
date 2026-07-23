@@ -17,8 +17,8 @@ PLANNING = (
 )
 
 ASK_PROMPT = "{prompt}"
-SUMMARIZE_PROMPT = (
-    "Summarize the following text in a clear and concise way:\n\n"
+CONTEXT_PROMPT = "{context}\n\n{prompt}"
+SUMMARIZE_PROMPT = (    "Summarize the following text in a clear and concise way:\n\n"
     "{text}\n\nSummary:"
 )
 EXPLAIN_PROMPT = (
