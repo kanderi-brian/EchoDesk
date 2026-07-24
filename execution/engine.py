@@ -93,8 +93,13 @@ class ExecutionEngine:
         result.finished_at = datetime.now()
         if result.started_at is not None:
             result.execution_time = (result.finished_at - result.started_at).total_seconds()
-        execution_summary = self._build_execution_summary(plan, result)
-        result.finalize(success=True, output=execution_summary)
+
+        if result.completed_steps == len(plan.steps) and not any(step.status == "skipped" for step in plan.steps) and not result.recovered_failures:
+            result.finalize(success=True, output="Execution completed successfully.")
+        else:
+            execution_summary = self._build_execution_summary(plan, result)
+            result.finalize(success=True, output=execution_summary)
+
         self.execution_history.append(result)
         return result
 
@@ -124,6 +129,11 @@ class ExecutionEngine:
 
     def skip_current_step(self) -> dict[str, Any]:
         """Skip the current step and continue execution."""
+        if self._current_step is None and self.current_plan is not None:
+            failed_step = next((step for step in self.current_plan.steps if step.status == "failed"), None)
+            if failed_step is not None:
+                self._current_step = failed_step
+
         if self._current_step is None:
             return {"success": False, "message": "No current step available to skip."}
 

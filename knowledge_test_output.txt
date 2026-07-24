@@ -1,0 +1,13 @@
+﻿python : ----------------------------------------------------------------------
+At line:1 char:1
++ python -m unittest tests.test_knowledge -q 2>&1 | Out-File knowledge_ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (---------------...--------------- 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Ran 2 tests in 0.087s
+
+OK
+[Memory] Loaded
+[Memory] Loaded

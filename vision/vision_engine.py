@@ -24,15 +24,21 @@ class VisionEngine:
 
     def __init__(self) -> None:
         self.sct = MSS()
-        self.ocr_reader = self._initialize_ocr_reader()
+        self.ocr_reader = None
+        self._ocr_initialized = False
 
-    def _initialize_ocr_reader(self) -> Any:
+    def _initialize_ocr_reader(self) -> None:
+        if self._ocr_initialized:
+            return
+
         try:
             import easyocr
 
-            return easyocr.Reader(["en"], gpu=False)
+            self.ocr_reader = easyocr.Reader(["en"], gpu=False)
         except Exception:
-            return None
+            self.ocr_reader = None
+        finally:
+            self._ocr_initialized = True
 
     def capture_screen(self) -> Image.Image:
         """Capture the primary screen and return a PIL Image."""

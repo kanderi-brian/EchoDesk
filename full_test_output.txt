@@ -1,0 +1,467 @@
+LLM fallback failed: LLM unavailable
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667B6FE020>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667B6FE110>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667B6FD5D0>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667B6FD4E0>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667B6FF3D0>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667B6FF5B0>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667B6FF4C0>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667B6FFC40>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667BC05990>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667BC04B80>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667BC048B0>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667BC065C0>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667BC063E0>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667BC056C0>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667B6FFF10>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667BC05B70>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667BC058A0>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667BC055D0>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667BC07010>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667BC072E0>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667BC06F20>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+C:\Users\HomePC\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py:2253: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x000001667BC06E30>
+  def __init__(self, name, parent):
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+----------------------------------------------------------------------
+Ran 230 tests in 139.979s
+
+OK
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[EchoBrain] Received request
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[EchoBrain] Completed request in 0.163s
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[EchoBrain] Received request
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[EchoBrain] Completed request in 0.108s
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[EchoBrain] Received request
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[EchoBrain] Completed request in 0.114s
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[EchoBrain] Received request
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[EchoBrain] Completed request in 0.095s
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[EchoBrain] Received request
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[EchoBrain] Completed request in 0.087s
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[EchoBrain] Received request
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[EchoBrain] Completed request in 0.085s
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[EchoBrain] Received request
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[EchoBrain] Completed request in 0.095s
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[EchoBrain] Received request
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[EchoBrain] Completed request in 0.102s
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Loaded
+[Memory] Saved
+[Memory] Saved
+[Learning] Preference learned
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Learning] Preference updated
+[Memory] Saved
+[Memory] Loaded
+[Memory] Saved
+[Learning] Preference learned
+[Memory] Saved
+[Learning] Preference learned
+[Memory] Saved
+[Memory] Saved
+[Learning] Preference updated
+[Memory] Saved
+[Learning] Recommendation generated
+[Memory] Loaded
+[Memory] Saved
+[Learning] Preference learned
+[Memory] Loaded
+[Memory] Saved
+[Learning] Preference learned
+[Memory] Saved
+[Learning] Preference removed
+[Memory] Loaded
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Learning] Preference learned
+[Memory] Saved
+[Memory] Loaded
+[Memory] Saved
+[Learning] Preference learned
+[Memory] Saved
+[Learning] Preference updated
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Executor] Executing plan
+[Task 1/2] Running Internet
+[Executor] Progress - Completed: 0, Running: 1, Failed: 0, Remaining: 1
+[Task] Search today's AI news. -> Internet
+[Retry] Reattempting task once.
+[Task] Search today's AI news. -> Internet
+[Retry] Task failed: Internet unavailable
+[Memory] Saved
+[Memory] Saved
+[Executor] Remaining tasks depend on failed task; halting execution.
+[Memory] Loaded
+[Memory] Loaded
+[Executor] Executing plan
+[Task 1/1] Running Memory
+[Executor] Progress - Completed: 0, Running: 1, Failed: 0, Remaining: 0
+[Task] Remember favorite language. -> Memory
+[Retry] Reattempting task once.
+[Task] Remember favorite language. -> Memory
+[Memory] Saved
+[Memory] Saved
+[Learning] Preference updated
+[Memory] Saved
+[Executor] Progress - Completed: 1, Running: 0, Failed: 0, Remaining: 0
+[Memory] Loaded
+[Memory] Loaded
+[Executor] Executing plan
+[Task 1/2] Running Internet
+[Executor] Progress - Completed: 0, Running: 1, Failed: 0, Remaining: 1
+[Task] Search today's AI news. -> Internet
+[Memory] Saved
+[Memory] Saved
+[Executor] Progress - Completed: 1, Running: 0, Failed: 0, Remaining: 1
+[Task 2/2] Running LLM
+[Executor] Progress - Completed: 1, Running: 1, Failed: 0, Remaining: 0
+[Task] Summarize search results. -> Llm
+[Memory] Saved
+[Memory] Saved
+[Executor] Progress - Completed: 2, Running: 0, Failed: 0, Remaining: 0
+[Vision] Running OCR
+[Vision] Analysis complete
+[Vision] Running OCR
+[Vision] Analysis complete
+[Voice] Listening...
+[Voice] Wake word detected
+[Voice] Speaking...
+[Voice] Finished

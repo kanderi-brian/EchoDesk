@@ -368,6 +368,34 @@ class PlannerEngine:
                     return True
         return False
 
+    def _prefers_voice(self, normalized: str) -> bool:
+        if self.learning_engine is None:
+            return False
+
+        try:
+            preferences = self.learning_engine.get_preferences()
+        except Exception:
+            return False
+
+        for pref in preferences:
+            if pref.category.lower() == "interaction mode" and pref.value.lower() == "voice" and pref.confidence >= 0.4:
+                return True
+        return False
+
+    def _prefers_vision(self, normalized: str) -> bool:
+        if self.learning_engine is None:
+            return False
+
+        try:
+            preferences = self.learning_engine.get_preferences()
+        except Exception:
+            return False
+
+        for pref in preferences:
+            if pref.category.lower() == "preferred tool" and pref.value.lower() == "vision" and pref.confidence >= 0.4:
+                return True
+        return False
+
     def _infer_expected_result(self, command: str, steps: list[PlanStep]) -> str:
         normalized = command.strip().lower()
         if "open" in normalized and "search" in normalized:

@@ -70,16 +70,20 @@ class TaskExecutor:
             print(f"[Task {index}/{total_tasks}] Running {task.capability}")
             task.status = ExecutionStatus.RUNNING
             self._report_progress(tasks)
+            task_start = time.perf_counter()
 
             execution = self._execute_task_with_retry(task, command)
+            task_duration = time.perf_counter() - task_start
             if execution["success"]:
                 task.status = ExecutionStatus.SUCCESS
                 task.result = execution.get("message")
                 final_outputs.append(f"[{task.capability}] {task.result}")
+                self._record_learning(command, task.capability, task.result, True, task_duration)
             else:
                 task.status = ExecutionStatus.FAILED
                 task.error = execution.get("message")
                 print(f"[Retry] Task failed: {task.error}")
+                self._record_learning(command, task.capability, task.error, False, task_duration)
 
                 if self._task_blocks_remaining(task, tasks[index:]):
                     print("[Executor] Remaining tasks depend on failed task; halting execution.")
@@ -246,6 +250,22 @@ class TaskExecutor:
         if result is None:
             return "LLM engine did not return a response."
         return str(result)
+
+    def _record_learning(self, command: str, capability: str, response: str, success: bool, duration: float | None) -> None:
+        if self.memory_engine is None:
+            return
+
+        try:
+            self.memory_engine.learn(
+                command=command,
+                capability=capability,
+                success=success,
+                response=response,
+                duration=duration,
+                engine=capability,
+            )
+        except Exception:
+            pass
 
     def _merge_responses(self, plan: ExecutionPlan, responses: dict[str, Any]) -> str:
         merged = []

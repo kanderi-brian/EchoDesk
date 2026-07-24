@@ -299,7 +299,7 @@ class RuntimeEngine:
            return "Execution resumed."
 
        current_plan = getattr(execution_engine, "current_plan", None)
-       if current_plan is not None and not current_plan.is_complete():
+       if current_plan is not None:
            result = execution_engine.execute_plan(current_plan)
            return str(result.output) if result.output is not None else "Execution continued."
 
@@ -321,7 +321,7 @@ class RuntimeEngine:
        result = execution_engine.retry_step()
        if result.get("success"):
            current_plan = getattr(execution_engine, "current_plan", None)
-           if current_plan is not None and not current_plan.is_complete():
+           if current_plan is not None:
                follow_on = execution_engine.execute_plan(current_plan)
                return str(follow_on.output) if follow_on.output is not None else "Retry succeeded and execution continued."
            return "Retry succeeded."
@@ -338,7 +338,7 @@ class RuntimeEngine:
            return skip_result.get("message", "Unable to skip the current step.")
 
        current_plan = getattr(execution_engine, "current_plan", None)
-       if current_plan is not None and not current_plan.is_complete():
+       if current_plan is not None:
            follow_on = execution_engine.execute_plan(current_plan)
            return str(follow_on.output) if follow_on.output is not None else "Step skipped and execution continued."
 

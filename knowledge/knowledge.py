@@ -72,18 +72,6 @@ class KnowledgeEngine:
         if context_answer is not None:
             return context_answer
 
-        plan = self.planner_engine.plan(question)
-        if plan is not None:
-            agent = self._agent_engine()
-            if agent is not None:
-                try:
-                    executor_response = agent.execute_goal(question)
-                    if executor_response.get("success"):
-                        return self._format_agent_response(executor_response)
-                except Exception:
-                    pass
-            return self.planner_engine.describe_plan(plan)
-
         local_answer = self.facts.get(question)
         if local_answer is not None:
             return local_answer

@@ -1,0 +1,33 @@
+﻿python : ----------------------------------------------------------------------
+At line:1 char:1
++ python -m unittest tests.test_runtime -q 2>&1 | Out-File runtime_test ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (---------------...--------------- 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Ran 11 tests in 0.260s
+
+OK
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded
+[Memory] Loaded

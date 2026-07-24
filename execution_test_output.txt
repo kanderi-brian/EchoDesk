@@ -1,0 +1,11 @@
+﻿python : ----------------------------------------------------------------------
+At line:1 char:1
++ python -m unittest tests.test_execution -q 2>&1 | Out-File execution_ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (---------------...--------------- 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Ran 8 tests in 0.210s
+
+OK
