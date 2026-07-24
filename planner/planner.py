@@ -2,7 +2,36 @@ import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
 from typing import Any, List
+
+
+class ExecutionStatus(str, Enum):
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    SKIPPED = "SKIPPED"
+
+
+@dataclass
+class Task:
+    id: str
+    description: str
+    capability: str
+    status: ExecutionStatus = field(default_factory=lambda: ExecutionStatus.PENDING)
+    result: str | None = None
+    error: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "description": self.description,
+            "capability": self.capability,
+            "status": self.status.value,
+            "result": self.result,
+            "error": self.error,
+        }
 
 
 @dataclass
@@ -41,6 +70,8 @@ class PlanStep:
 class ExecutionPlan:
     goal: str
     steps: List[PlanStep] = field(default_factory=list)
+    tasks: List[Task] = field(default_factory=list)
+    required_capabilities: List[str] = field(default_factory=list)
     estimated_complexity: str = "unknown"
     requires_confirmation: bool = False
     created_at: datetime = field(default_factory=datetime.now)
@@ -48,8 +79,14 @@ class ExecutionPlan:
     required_tools: List[str] = field(default_factory=list)
     expected_result: str = ""
 
+    def __post_init__(self) -> None:
+        self.original_request = self.goal
+
     def add_step(self, step: PlanStep) -> None:
         self.steps.append(step)
+
+    def add_task(self, task: Task) -> None:
+        self.tasks.append(task)
 
     def next_step(self) -> PlanStep | None:
         for step in self.steps:
@@ -66,6 +103,7 @@ class ExecutionPlan:
         return {
             "goal": self.goal,
             "steps": [step.to_dict() for step in self.steps],
+            "tasks": [task.to_dict() for task in self.tasks],
             "estimated_complexity": self.estimated_complexity,
             "requires_confirmation": self.requires_confirmation,
             "created_at": self.created_at.isoformat(),
@@ -82,14 +120,16 @@ class PlannerEngine:
     structured execution plan. It never executes actions itself.
     """
 
-    def __init__(self, automation_engine: Any | None = None):
+    def __init__(self, automation_engine: Any | None = None, learning_engine: Any | None = None):
         """Initialize the planner engine.
 
         Args:
             automation_engine: Optional automation engine instance used for
                 validating automation-related plans without executing them.
+            learning_engine: Optional learning engine providing preferences.
         """
         self.automation_engine = automation_engine
+        self.learning_engine = learning_engine
 
     def plan(self, command: str) -> ExecutionPlan | None:
         """Translate a user goal into a structured execution plan.
@@ -112,6 +152,12 @@ class PlannerEngine:
             self._plan_open_app_and_search,
             self._plan_open_application,
             self._plan_open_website,
+            self._plan_search_and_summarize,
+            self._plan_generic_internet_search,
+            self._plan_generic_memory_command,
+            self._plan_generic_knowledge_query,
+            self._plan_generic_vision_command,
+            self._plan_generic_voice_command,
             self._plan_search_documentation,
             self._plan_fix_python_error,
             self._plan_remember_conversation,
@@ -168,14 +214,19 @@ class PlannerEngine:
         lines.append(f"Estimated complexity: {complexity}")
         lines.append(f"Required tools: {', '.join(required_tools) or 'none'}")
         lines.append(f"Expected result: {expected_result}")
-        lines.append("Steps:")
 
+        lines.append("Steps:")
         for index, step in enumerate(steps, start=1):
             if isinstance(step, PlanStep):
                 description = step.description or self._format_step(step.to_dict())
             else:
                 description = step.get("description") or self._format_step(step)
             lines.append(f"{index}. {description}")
+
+        if isinstance(plan, ExecutionPlan) and plan.tasks:
+            lines.append("Tasks:")
+            for idx, task in enumerate(plan.tasks, start=1):
+                lines.append(f"{idx}. [{task.capability}] {task.description} ({task.status.value})")
 
         return "\n".join(lines)
 
@@ -187,13 +238,21 @@ class PlannerEngine:
         goal = command.strip()
         reasoning = self._infer_reasoning(command, steps)
         complexity = self._estimate_complexity(steps)
-        tools = self._infer_tools(steps)
+        capabilities = self._infer_capabilities(command)
+        tools = self._infer_tools(steps) or [cap.lower() for cap in capabilities]
         expected_result = self._infer_expected_result(command, steps)
         requires_confirmation = any(step.optional for step in steps) or complexity != "easy"
 
+        for step in steps:
+            if not step.engine or step.engine == "unknown":
+                step.engine = capabilities[0] if capabilities else "LLM"
+
+        tasks = self._build_tasks(steps, capabilities)
         plan = ExecutionPlan(
             goal=goal,
             steps=steps,
+            tasks=tasks,
+            required_capabilities=sorted({task.capability for task in tasks}) if tasks else capabilities,
             estimated_complexity=complexity,
             requires_confirmation=requires_confirmation,
             reasoning=reasoning,
@@ -248,18 +307,80 @@ class PlannerEngine:
                 tools.add("keyboard")
         return sorted(tools)
 
-    def _infer_expected_result(self, command: str, steps: list[dict[str, str]]) -> str:
-        if "open" in command.lower() and "search" in command.lower():
+    def _task(self, description: str, capability: str) -> Task:
+        return Task(id=str(uuid.uuid4()), description=description, capability=capability)
+
+    def _build_tasks(self, steps: list[PlanStep], capabilities: list[str]) -> list[Task]:
+        tasks: list[Task] = []
+        for step in steps:
+            capability = "LLM"
+            if step.engine and "internet" in step.engine.lower():
+                capability = "Internet"
+            elif step.engine and "knowledge" in step.engine.lower():
+                capability = "Knowledge"
+            elif step.engine and "memory" in step.engine.lower():
+                capability = "Memory"
+            elif step.engine and "vision" in step.engine.lower():
+                capability = "Vision"
+            elif step.engine and "voice" in step.engine.lower():
+                capability = "Voice"
+            else:
+                inferred = self._infer_capabilities(step.action)
+                if inferred:
+                    capability = inferred[0]
+                elif capabilities:
+                    capability = capabilities[0]
+            tasks.append(self._task(step.description, capability))
+        return tasks
+
+    def _infer_capabilities(self, command: str) -> list[str]:
+        normalized = command.strip().lower()
+
+        if any(keyword in normalized for keyword in ("image", "screenshot", "screen", "describe this")):
+            return ["Vision"]
+        if any(keyword in normalized for keyword in ("listen", "say", "speak", "voice", "microphone", "wake", "hello", "hi")):
+            return ["Voice"]
+        if any(keyword in normalized for keyword in ("remember", "history", "recall", "what do you remember", "what do you know")):
+            return ["Memory"]
+        if any(keyword in normalized for keyword in ("weather", "news", "search")):
+            return ["Internet"]
+        if any(keyword in normalized for keyword in ("what is my", "what are my", "tell me about my", "what do i know about", "what do you know about my", "do i have")):
+            return ["Memory"]
+        if self._prefers_programming_knowledge(normalized):
+            return ["Knowledge"]
+        if any(keyword in normalized for keyword in ("what is", "explain", "define", "describe", "who is", "who are", "why is", "how does", "knowledge", "lookup")):
+            return ["Knowledge"]
+
+        return ["LLM"]
+
+    def _prefers_programming_knowledge(self, normalized: str) -> bool:
+        if self.learning_engine is None:
+            return False
+
+        try:
+            preferences = self.learning_engine.get_preferences()
+        except Exception:
+            return False
+
+        for pref in preferences:
+            if pref.category.lower() == "language" and pref.key.lower() == "programming language" and pref.value.lower() == "python" and pref.confidence >= 0.4:
+                if "python" in normalized and "news" not in normalized and "search" not in normalized:
+                    return True
+        return False
+
+    def _infer_expected_result(self, command: str, steps: list[PlanStep]) -> str:
+        normalized = command.strip().lower()
+        if "open" in normalized and "search" in normalized:
             return "The application opens and performs the search."
-        if "read" in command.lower() and "screen" in command.lower():
+        if "read" in normalized and "screen" in normalized:
             return "A summary of the screen contents is provided."
-        if "time" in command.lower():
+        if "time" in normalized:
             return "The current system time is returned."
-        if "summarize" in command.lower():
+        if "summarize" in normalized:
             return "A short summary of the requested content is returned."
-        if "organize" in command.lower():
+        if "organize" in normalized:
             return "Files or desktop items are arranged neatly."
-        if "create a folder" in command.lower() or "create folder" in command.lower():
+        if "create a folder" in normalized or "create folder" in normalized:
             return "A new folder is created with the requested name."
         return "The requested task is planned and ready for execution."
 
@@ -309,6 +430,56 @@ class PlannerEngine:
             self._step("Open website", url, f"Open website: {url}."),
             self._step("Wait", "browser", "Wait until the browser opens the website."),
         ]
+ 
+    def _plan_search_and_summarize(self, text: str) -> list[PlanStep] | None:
+        if re.search(r"\b(search|find|browse)\b.*\b(summariz|summary|summarise)\b", text) or (
+            "search" in text and "summarize" in text
+        ):
+            return [
+                self._step("Search internet", text, "Search the internet for the requested topic."),
+                self._step("Summarize results", "search results", "Summarize the internet findings using the language model."),
+            ]
+        return None
+
+    def _plan_generic_internet_search(self, text: str) -> list[PlanStep] | None:
+        if re.search(r"\b(search|weather|news|browse|find)\b", text):
+            return [
+                self._step("Search internet", text, "Use the internet engine to search for the user request."),
+            ]
+        return None
+ 
+    def _plan_generic_knowledge_query(self, text: str) -> list[PlanStep] | None:
+        if re.search(r"\b(what is|explain|define|describe|who is|who are|why is)\b", text):
+            return [
+                self._step("Lookup knowledge", text, "Use the knowledge engine to answer the question."),
+            ]
+        return None
+ 
+    def _plan_generic_memory_command(self, text: str) -> list[PlanStep] | None:
+        if re.search(
+            r"\b(remember|recall|what do you remember|what do i remember|what is my|what are my|tell me about my|what do you know about my|do i have|what do i know about|forget|delete|remove)\b",
+            text,
+        ):
+            return [
+                self._step("Manage memory", text, "Use the memory engine to store, recall, or manage memory."),
+            ]
+        return None
+ 
+    def _plan_generic_vision_command(self, text: str) -> list[PlanStep] | None:
+        if re.search(r"\b(image|screenshot|screen|describe this|describe)\b", text):
+            return [
+                self._step("Analyze screen", text, "Use the vision engine to inspect or describe screen content."),
+            ]
+        return None
+ 
+    def _plan_generic_voice_command(self, text: str) -> list[PlanStep] | None:
+        if re.search(r"\b(listen|say|speak|voice|microphone|wake|hello|hi|good morning|good evening)\b", text):
+            action = "Listen for voice command" if re.search(r"\b(listen|wake|microphone)\b", text) else "Speak response"
+            description = "Use the voice engine to capture or vocalize audio." if action.startswith("Listen") else "Use the voice engine to vocalize a response."
+            return [
+                self._step(action, text, description),
+            ]
+        return None
  
     def _plan_search_documentation(self, text: str) -> list[PlanStep] | None:
         if "search" in text and ("python documentation" in text or "python docs" in text):

@@ -6,11 +6,16 @@ from typing import Any, Optional
 
 from brain.router import Router
 from context.context import get_context_engine
+from executor.task_executor import TaskExecutor
 from memory.controller import MemoryController
 from memory.memory import Memory
+from memory_engine.memory_engine import MemoryEngine
+from planner.planner import ExecutionPlan, PlannerEngine, PlanStep
 from vision.capture import ScreenCapture
 from vision.reader import ScreenReader
 from vision.analyzer import ScreenAnalyzer
+from vision.vision_engine import VisionEngine
+from voice.voice_engine import VoiceEngine
 from knowledge.knowledge import KnowledgeEngine
 
 
@@ -39,6 +44,19 @@ class EchoBrain:
         self.internet_engine = internet_engine
         self.llm_engine = llm_engine
         self.desktop_controller = desktop_controller
+
+        self.memory_engine = MemoryEngine()
+
+        # Execution pipeline
+        self.planner = PlannerEngine(learning_engine=self.memory_engine)
+        self.executor = TaskExecutor(
+            memory_engine=self.memory_engine,
+            knowledge_engine=self.knowledge,
+            internet_engine=self.internet_engine,
+            vision_engine=VisionEngine(),
+            voice_engine=VoiceEngine(),
+            llm_engine=self.llm_engine,
+        )
 
         # Lazy-loaded vision modules
         self.capture = None
@@ -266,11 +284,10 @@ class EchoBrain:
 
         return None
 
-    def process(self, command):
-
+    def process(self, command: str, return_structured: bool = False) -> str | dict[str, Any]:
+        """Process a user command through the unified intelligence runtime."""
+        print("[EchoBrain] Received request")
         start_time = time.perf_counter()
-        selected_engines = []
-        route = None
 
         if self.context_engine is not None:
             try:
@@ -279,93 +296,165 @@ class EchoBrain:
             except Exception:
                 pass
 
-        # Check if this is a long-term memory command
+        route_result = None
+        if self.router is not None:
+            try:
+                route_result = self.router.route(command)
+            except Exception:
+                route_result = None
+
         memory_response = self._handle_memory_command(command)
+        if memory_response is not None:
+            plan = None
+            result = None
+            final_response = memory_response
+            engines_used = ["Memory"]
+        elif isinstance(route_result, str) and route_result.lower() in {
+            "greeting",
+            "internet",
+            "knowledge",
+            "memory",
+            "vision",
+            "time",
+            "screenshot",
+            "voice",
+        }:
+            plan = None
+            result = None
+            final_response, engine_used = self._handle_legacy_route(route_result.lower(), command)
+            engines_used = [engine_used]
+        else:
+            plan = self.planner.plan(command)
 
-        if memory_response:
-            selected_engines.append("MemoryEngine")
-            self.memory.remember(command, memory_response)
-            self.logger.info(
-                "Processed memory command. route=memory selected_engines=%s elapsed=%.3fs",
-                selected_engines,
-                time.perf_counter() - start_time,
-            )
-            return memory_response
-
-        intent = self.router.route(command)
-        route = intent
-
-        try:
-            if intent == "greeting":
-                selected_engines.append("LLMEngine")
-                response = self._llm_fallback(command)
-
-            elif intent == "time":
-                selected_engines.append("Brain")
-                now = datetime.datetime.now()
-                response = f"The current time is {now.strftime('%H:%M:%S')}"
-
-            elif intent == "history":
-                selected_engines.append("MemoryEngine")
-                history = self.memory.recall()
-                response = f"I remember {len(history)} conversations."
-
-            elif intent == "screenshot":
-                selected_engines.append("Vision")
-                self.load_vision()
-                image = self.capture.take_screenshot()
-                response = f"Screenshot saved to {image}"
-
-            elif intent == "vision":
-                selected_engines.append("Vision")
-                self.load_vision()
-                image = self.capture.take_screenshot()
-                text = self.reader.read_image(image)
-                response = self.analyzer.analyze(text)
-
-            elif intent == "internet":
-                selected_engines.append("InternetEngine")
-                if self.internet_engine is not None:
-                    response = self.internet_engine.search(command)
-                else:
-                    response = self._llm_fallback(command)
-
-            elif intent == "knowledge":
-                selected_engines.append("KnowledgeEngine")
-                response = self.knowledge.search(command)
-                if not response:
-                    selected_engines.append("LLMEngine")
-                    response = self._llm_fallback(command)
-
+            if plan is None:
+                print("[Planner] No plan generated, falling back to LLM.")
+                plan = ExecutionPlan(
+                    goal=command,
+                    steps=[
+                        PlanStep(
+                            id="fallback",
+                            tool=command,
+                            action="Generate response",
+                            description="Fallback to LLM for the user request.",
+                            expected_result="A response generated by the language model.",
+                            engine="LLM",
+                        )
+                    ],
+                    required_capabilities=["LLM"],
+                    reasoning="Fallback plan when no specific capability route applies.",
+                    expected_result="Provide a helpful answer with the LLM.",
+                )
             else:
-                selected_engines.append("LLMEngine")
-                response = self._llm_fallback(command)
+                print(f"[Planner] Generated plan with capabilities: {plan.required_capabilities}")
 
-        except Exception as error:
-           self.logger.error(
-               "Failed to process command. route=%s selected_engines=%s error=%s",
-               route,
-               selected_engines,
-               error,
-               exc_info=True,
-           )
-           response = "Something went wrong while processing your request. Please try again."
+            result = self.executor.execute_plan(plan, command)
+            final_response = result.final_response
+            engines_used = result.engines_used
 
         if self.context_engine is not None:
-           try:
-               self.context_engine.add_assistant_message(response)
-               self._update_context_from_command(command, response)
-           except Exception:
-               pass
+            try:
+                self.context_engine.add_assistant_message(final_response)
+                self._update_context_from_command(command, final_response)
+            except Exception:
+                pass
 
-        self.memory.remember(command, response)
-        self.logger.info(
-            "Processed command. route=%s selected_engines=%s elapsed=%.3fs",
-            route,
-            selected_engines,
-            time.perf_counter() - start_time,
+        self.memory.remember(command, final_response)
+        self.memory_engine.add_interaction(command, final_response)
+        self.memory_engine.learn(
+            command,
+            capability=(result.engines_used[0] if result else engines_used[0] if engines_used else None),
+            success=(result.status == "SUCCESS" if result else bool(final_response)),
+            response=final_response,
+            duration=(result.execution_time if result else 0.0),
         )
-        return response
+
+        elapsed = time.perf_counter() - start_time
+        print(f"[EchoBrain] Completed request in {elapsed:.3f}s")
+
+        structured_response = {
+            "request": command,
+            "plan": plan,
+            "engines_used": engines_used,
+            "final_response": final_response,
+            "details": result,
+            "response": final_response,
+        }
+
+        if return_structured:
+            return structured_response
+        return final_response
+
+    def _handle_legacy_route(self, route: str, command: str) -> tuple[str, str]:
+        if route == "greeting":
+            if self.llm_engine is not None:
+                return self._llm_fallback(command), "LLM"
+            return "Hello! I am EchoDesk. How can I help you?", "System"
+
+        if route == "internet":
+            if self.internet_engine is not None:
+                try:
+                    result = self.internet_engine.search(command)
+                    if result is not None:
+                        return str(result), "Internet"
+                except Exception:
+                    pass
+            if self.llm_engine is not None:
+                return self._llm_fallback(command), "LLM"
+            return "Internet engine is unavailable.", "Internet"
+
+        if route == "knowledge":
+            if self.knowledge is not None:
+                try:
+                    result = self.knowledge.search(command)
+                    if result is not None:
+                        return str(result), "Knowledge"
+                except Exception:
+                    pass
+            if self.llm_engine is not None:
+                return self._llm_fallback(command), "LLM"
+            return "Knowledge engine is unavailable.", "Knowledge"
+
+        if route == "memory":
+            memory_response = self._handle_memory_command(command)
+            if memory_response is not None:
+                return memory_response, "Memory"
+            if self.llm_engine is not None:
+                return self._llm_fallback(command), "LLM"
+            return "I couldn't process the memory command.", "Memory"
+
+        if route == "vision":
+            self.load_vision()
+            try:
+                image = self.capture.take_screenshot()
+                text = self.reader.read_image(image)
+                result = self.analyzer.analyze(text)
+                return result, "Vision"
+            except Exception:
+                if self.llm_engine is not None:
+                    return self._llm_fallback(command), "LLM"
+                return "Vision processing failed.", "Vision"
+
+        if route == "voice":
+            try:
+                result = self.executor._execute_voice(command)
+                return str(result), "Voice"
+            except Exception:
+                if self.llm_engine is not None:
+                    return self._llm_fallback(command), "LLM"
+                return "Voice engine is unavailable.", "Voice"
+
+        if route == "time":
+            return datetime.datetime.now().strftime("The current time is %H:%M:%S"), "System"
+
+        if route == "screenshot":
+            self.load_vision()
+            try:
+                image = self.capture.take_screenshot()
+                return f"Screenshot saved to {image}", "System"
+            except Exception:
+                return "Screenshot capture failed.", "System"
+
+        return "I don't understand that request yet.", "System"
 
     def _llm_fallback(self, command: str) -> str:
         if self.llm_engine is None:
