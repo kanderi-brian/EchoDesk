@@ -78,7 +78,7 @@ The current validation suite contains 44 passing tests.
 
 **Current Version**
 
-EchoDesk Core v1.0
+EchoDesk v3.0 (Production)
 
 **Next**
 

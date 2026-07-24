@@ -2,16 +2,15 @@
 
 import time
 import uuid
+import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from knowledge.knowledge import KnowledgeEngine
-from internet.internet_engine import InternetEngine
-from memory_engine.memory_engine import MemoryEngine
-from vision.vision_engine import VisionEngine, VisionResult
-from voice.voice_engine import VoiceEngine
-from llm.engine import LLMEngine
 from planner.planner import ExecutionPlan, ExecutionStatus, Task
+from memory_engine.memory_engine import MemoryEngine
+
+# Heavy engines are imported lazily inside their respective execution methods to
+# reduce startup cost.
 
 
 @dataclass
@@ -37,23 +36,34 @@ class ExecutionResult:
 
 
 class TaskExecutor:
-    """Execute plans by dispatching work to the required intelligence engines."""
+    """Execute plans by dispatching work to the required intelligence engines.
+
+    Engines other than the memory engine are created lazily to improve startup
+    performance in production.
+    """
 
     def __init__(
         self,
         memory_engine: MemoryEngine | None = None,
-        knowledge_engine: KnowledgeEngine | None = None,
-        internet_engine: InternetEngine | None = None,
-        vision_engine: VisionEngine | None = None,
-        voice_engine: VoiceEngine | None = None,
-        llm_engine: LLMEngine | None = None,
+        knowledge_engine: Any | None = None,
+        internet_engine: Any | None = None,
+        vision_engine: Any | None = None,
+        voice_engine: Any | None = None,
+        llm_engine: Any | None = None,
+        plugin_manager: object | None = None,
+        retry_limit: int = 2,
     ) -> None:
+        self.logger = logging.getLogger("echodesk.executor")
         self.memory_engine = memory_engine or MemoryEngine()
-        self.knowledge_engine = knowledge_engine or KnowledgeEngine()
-        self.internet_engine = internet_engine or InternetEngine()
-        self.vision_engine = vision_engine or VisionEngine()
-        self.voice_engine = voice_engine or VoiceEngine()
-        self.llm_engine = llm_engine or LLMEngine()
+        # keep references but allow lazy construction when None
+        self._knowledge_engine = knowledge_engine
+        self._internet_engine = internet_engine
+        self._vision_engine = vision_engine
+        self._voice_engine = voice_engine
+        self._llm_engine = llm_engine
+        # Plugin manager may be injected by EchoBrain; keep optional for backward compatibility
+        self.plugin_manager = plugin_manager
+        self.retry_limit = max(0, int(retry_limit))
 
     def execute_plan(self, plan: ExecutionPlan, command: str) -> ExecutionResult:
         """Execute the provided plan by running tasks sequentially."""
@@ -102,17 +112,65 @@ class TaskExecutor:
         return result
 
     def _execute_memory(self, command: str) -> str:
-        result = self.memory_engine.process_command(command)
-        if result is None:
-            return "Memory engine did not understand the request."
-        return result
+        try:
+            result = self.memory_engine.process_command(command)
+            if result is None:
+                return "Memory engine did not understand the request."
+            return result
+        except Exception as exc:
+            self.logger.exception("Memory execution failed")
+            return "Memory engine failed to process the command." 
 
     def _execute_task(self, task: Task, command: str) -> dict[str, Any]:
         capability = task.capability
         engine_name = capability.title()
-        print(f"[Task] {task.description} -> {engine_name}")
+        self.logger.debug("[Task] %s -> %s", task.description, engine_name)
 
+        # If this task explicitly requests a Plugin capability, run the plugin and return.
         try:
+            pm = getattr(self, "plugin_manager", None)
+            if capability == "Plugin":
+                if pm is None:
+                    return {"success": False, "message": "No plugin manager available."}
+                try:
+                    registry = pm.get_registry()
+                    handler = registry.find_handler(command)
+                    if not handler:
+                        return {"success": False, "message": "No plugin found to handle the command."}
+                    try:
+                        result = handler.execute(command)
+                        if result is None:
+                            return {"success": True, "message": ""}
+                        return {"success": True, "message": str(result)}
+                    except Exception as exc:
+                        self.logger.exception("Plugin execution failed: %s", getattr(handler, "name", "?"))
+                        return {"success": False, "message": f"Plugin {getattr(handler, 'name', '?')} execution failed: {exc}"}
+                except Exception:
+                    self.logger.exception("Plugin registry error during plugin capability execution")
+                    return {"success": False, "message": "Plugin execution failed due to registry error."}
+
+            # Otherwise, before builtin engines, ask plugin manager if any plugin wants to handle this exact command.
+            if pm is not None:
+                try:
+                    registry = pm.get_registry()
+                    handler = registry.find_handler(command)
+                    if handler:
+                        try:
+                            result = handler.execute(command)
+                            # normalize result to string where appropriate
+                            if result is None:
+                                return {"success": True, "message": ""}
+                            if isinstance(result, (str, int, float)):
+                                return {"success": True, "message": str(result)}
+                            return {"success": True, "message": str(result)}
+                        except Exception as exc:
+                            self.logger.exception("Plugin handler failed")
+                            return {"success": False, "message": f"Plugin {getattr(handler, 'name', '?')} execution failed: {exc}"}
+                except Exception:
+                    # plugin registry errors should not break execution
+                    self.logger.debug("Plugin registry check failed, continuing to builtin engines")
+                    pass
+
             if capability == "Memory":
                 return {"success": True, "message": self._execute_memory(command)}
             if capability == "Knowledge":
@@ -127,19 +185,27 @@ class TaskExecutor:
                 return {"success": True, "message": self._execute_llm(command)}
             return {"success": False, "message": f"Capability {capability} is not supported yet."}
         except Exception as exc:
+            self.logger.exception("Unexpected error during task execution")
             return {"success": False, "message": str(exc)}
 
     def _execute_task_with_retry(self, task: Task, command: str) -> dict[str, Any]:
-        result = self._execute_task(task, command)
-        if result.get("success"):
-            return result
+        attempt = 0
+        last_result: dict[str, Any] = {"success": False, "message": "Task was not executed."}
 
-        print("[Retry] Reattempting task once.")
-        retry_result = self._execute_task(task, command)
-        if retry_result.get("success"):
-            return retry_result
+        while attempt <= self.retry_limit:
+            result = self._execute_task(task, command)
+            attempt += 1
+            task.retry_count = attempt
+            if result.get("success"):
+                return result
 
-        return retry_result
+            last_result = result
+            if attempt > self.retry_limit:
+                break
+
+            print(f"[Retry] Reattempting task ({attempt}/{self.retry_limit})")
+
+        return last_result
 
     def _tasks_from_capabilities(self, capabilities: list[str]) -> list[Task]:
         tasks = []
@@ -186,70 +252,142 @@ class TaskExecutor:
         return logs
 
     def _execute_knowledge(self, command: str) -> str:
-        result = self.knowledge_engine.search(command)
-        if result is None:
-            return "Knowledge engine did not produce an answer."
-        return str(result)
+        if self._knowledge_engine is None:
+            from knowledge.knowledge import KnowledgeEngine
+
+            self._knowledge_engine = KnowledgeEngine()
+        try:
+            result = self._knowledge_engine.search(command)
+            if result is None:
+                return "Knowledge engine did not produce an answer."
+            return str(result)
+        except Exception:
+            self.logger.exception("Knowledge execution failed")
+            return "Knowledge engine failed."
 
     def _execute_internet(self, command: str) -> Any:
-        result = self.internet_engine.search(command)
-        if result is None:
-            return {"status": "unavailable", "message": "Internet engine did not return a response."}
-        return result
+        if self._internet_engine is None:
+            from internet.internet_engine import InternetEngine
+
+            self._internet_engine = InternetEngine()
+        try:
+            result = self._internet_engine.search(command)
+            if result is None:
+                return {"status": "unavailable", "message": "Internet engine did not return a response."}
+            return result
+        except Exception:
+            self.logger.exception("Internet execution failed")
+            return {"status": "error", "message": "Internet engine failed."}
 
     def _execute_vision(self, command: str) -> str:
-        result = self.vision_engine.analyze(command)
-        if result is None:
-            return "Vision engine did not return a result."
+        if self._vision_engine is None:
+            from vision.vision_engine import VisionEngine, VisionResult
 
-        if isinstance(result, VisionResult):
-            details = [
-                f"Summary: {result.summary}",
-                f"Detected text length: {len(result.text)}",
-                f"Average confidence: {result.confidence:.2f}",
-            ]
-            if result.ui_elements:
-                details.append(f"Detected UI elements: {', '.join(result.ui_elements)}")
-            if result.text:
-                sample = result.text.strip().replace("\n", " ")
-                details.append(f"Text preview: {sample[:250]}")
-            return " | ".join(details)
+            self._vision_engine = VisionEngine()
+        try:
+            result = self._vision_engine.analyze(command)
+            if result is None:
+                return "Vision engine did not return a result."
 
-        if isinstance(result, dict):
-            return result.get("summary") or result.get("message") or str(result)
+            # handle VisionResult-like object
+            try:
+                SummaryClass = type(result)
+                if hasattr(result, "summary") and hasattr(result, "text"):
+                    details = [f"Summary: {result.summary}", f"Detected text length: {len(result.text)}", f"Average confidence: {getattr(result, 'confidence', 0.0):.2f}"]
+                    if getattr(result, "ui_elements", None):
+                        details.append(f"Detected UI elements: {', '.join(result.ui_elements)}")
+                    if getattr(result, "text", None):
+                        sample = result.text.strip().replace("\n", " ")
+                        details.append(f"Text preview: {sample[:250]}")
+                    return " | ".join(details)
+            except Exception:
+                pass
 
-        return str(result)
+            if isinstance(result, dict):
+                return result.get("summary") or result.get("message") or str(result)
+
+            return str(result)
+        except Exception:
+            self.logger.exception("Vision execution failed")
+            return "Vision engine failed."
 
     def _execute_voice(self, command: str) -> Any:
-        if command.strip().lower() in ("listen", "wake", "microphone") or command.strip().lower().startswith("listen"):
-            result = self.voice_engine.listen()
+        if self._voice_engine is None:
+            from voice.voice_engine import VoiceEngine
+
+            self._voice_engine = VoiceEngine()
+        try:
+            normalized = command.strip().lower()
+            if normalized in ("listen", "wake", "microphone") or normalized.startswith("listen"):
+                result = self._voice_engine.listen()
+                if not isinstance(result, dict):
+                    return str(result)
+                if not result.get("success"):
+                    return result.get("message", "Voice listen failed.")
+                return result.get("transcript", "")
+
+            result = self._voice_engine.speak(command)
             if not isinstance(result, dict):
                 return str(result)
             if not result.get("success"):
-                return result.get("message", "Voice listen failed.")
-            return result.get("transcript", "")
-
-        result = self.voice_engine.speak(command)
-        if not isinstance(result, dict):
-            return str(result)
-        if not result.get("success"):
-            return result.get("message", "Voice engine did not return a result.")
-        return result.get("spoken_text", command)
+                return result.get("message", "Voice engine did not return a result.")
+            return result.get("spoken_text", command)
+        except Exception:
+            self.logger.exception("Voice execution failed")
+            return "Voice engine failed."
 
     def _execute_llm(self, command: str) -> str:
-        context_entries = self.memory_engine.get_recent_context(limit=5)
-        if context_entries:
-            context_text = []
-            for entry in context_entries:
-                context_text.append(f"User: {entry.user}\nAssistant: {entry.assistant}")
-            full_context = "\n---\n".join(context_text)
-        else:
-            full_context = None
+        if self._llm_engine is None:
+            from llm.engine import LLMEngine
 
-        result = self.llm_engine.ask(command, context=full_context)
-        if result is None:
-            return "LLM engine did not return a response."
-        return str(result)
+            self._llm_engine = LLMEngine()
+        try:
+            print("[LLM] Preparing context...")
+            self.logger.debug("Collecting memory context for LLM (limit=5)")
+            context_entries = self.memory_engine.get_recent_context(limit=5)
+            # Ensure at most 5 entries are used even if underlying memory engine returned more
+            if isinstance(context_entries, list):
+                context_entries = context_entries[:5]
+
+            context_text = []
+            if context_entries:
+                for entry in context_entries:
+                    # Use a compact representation and keep recent entries
+                    user = getattr(entry, "user", "")
+                    assistant = getattr(entry, "assistant", "")
+                    context_text.append(f"User: {user}\nAssistant: {assistant}")
+
+            full_context = "\n---\n".join(context_text) if context_text else None
+
+            # enforce overall approximate context size limit (~4000 chars)
+            if full_context:
+                max_total = 4000
+                prompt_len = len(command or "")
+                # If too long, drop oldest entries until within limits
+                while len(full_context) + prompt_len > max_total and "---" in full_context:
+                    parts = full_context.split("\n---\n")
+                    if len(parts) <= 1:
+                        break
+                    parts.pop(0)
+                    full_context = "\n---\n".join(parts)
+
+            # Now call the LLM provider with clear progress messages and timing
+            print("[LLM] Sending request...")
+            self.logger.debug("LLM prompt size (approx): %d", len(full_context or "") + len(command or ""))
+            print("[LLM] Waiting for response...")
+            t0 = time.perf_counter()
+            result = self._llm_engine.ask(command, context=full_context)
+            t1 = time.perf_counter()
+            print("[LLM] Response received.")
+            self.logger.info("LLM response time: %.3fs", (t1 - t0))
+            self.logger.debug("LLM context length: %d, prompt length: %d", len(full_context or ""), len(command or ""))
+
+            if result is None:
+                return "LLM engine did not return a response."
+            return str(result)
+        except Exception:
+            self.logger.exception("LLM execution failed")
+            return "LLM engine failed."
 
     def _record_learning(self, command: str, capability: str, response: str, success: bool, duration: float | None) -> None:
         if self.memory_engine is None:

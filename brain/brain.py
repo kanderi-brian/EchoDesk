@@ -11,12 +11,16 @@ from memory.controller import MemoryController
 from memory.memory import Memory
 from memory_engine.memory_engine import MemoryEngine
 from planner.planner import ExecutionPlan, PlannerEngine, PlanStep
-from vision.capture import ScreenCapture
-from vision.reader import ScreenReader
-from vision.analyzer import ScreenAnalyzer
-from vision.vision_engine import VisionEngine
-from voice.voice_engine import VoiceEngine
 from knowledge.knowledge import KnowledgeEngine
+from goal_manager.goal_manager import GoalManager, GoalStatus
+from runtime.agent_runtime import AgentRuntime
+from reflection.reflection_engine import ReflectionEngine
+from history.history_engine import HistoryEngine
+from scheduler.scheduler import Scheduler
+
+# configuration and logging
+from core.config import get_config
+from core.logging_config import setup_logging
 
 
 class EchoBrain:
@@ -47,15 +51,24 @@ class EchoBrain:
 
         self.memory_engine = MemoryEngine()
 
-        # Execution pipeline
+        # Goal management and execution pipeline
+        self.goal_manager = GoalManager()
+        self.goal_manager.resume_interrupted_goals()
+        self.reflection_engine = ReflectionEngine(memory_engine=self.memory_engine)
+        self.history_engine = HistoryEngine()
+        self.scheduler = Scheduler()
+        self.agent_runtime = AgentRuntime(self)
+
         self.planner = PlannerEngine(learning_engine=self.memory_engine)
+        # create executor but avoid forcing heavy engine instantiation (they'll be lazy-loaded)
         self.executor = TaskExecutor(
             memory_engine=self.memory_engine,
-            knowledge_engine=self.knowledge,
-            internet_engine=self.internet_engine,
-            vision_engine=VisionEngine(),
-            voice_engine=VoiceEngine(),
-            llm_engine=self.llm_engine,
+            knowledge_engine=self.knowledge if getattr(self, 'knowledge', None) is not None else None,
+            internet_engine=self.internet_engine if getattr(self, 'internet_engine', None) is not None else None,
+            vision_engine=None,
+            voice_engine=None,
+            llm_engine=self.llm_engine if getattr(self, 'llm_engine', None) is not None else None,
+            plugin_manager=None,
         )
 
         # Lazy-loaded vision modules
@@ -63,17 +76,109 @@ class EchoBrain:
         self.reader = None
         self.analyzer = None
 
+        # configure logging once per process
+        setup_logging()
         self.logger = logging.getLogger("echodesk.brain")
+
+        # Initialize PluginManager and load plugins (Phase 16.1 - Plugin Core)
+        cfg = get_config()
+        try:
+            if cfg.get("plugins", {}).get("lazy_load"):
+                self.plugin_manager = None
+                self.logger.info("PluginManager lazy_load enabled; plugins will load on demand")
+            else:
+                from plugins.plugin_manager import PluginManager
+
+                self.plugin_manager = PluginManager()
+                loaded = self.plugin_manager.load_plugins()
+                self.logger.info("[PluginManager] Loaded %d plugins", loaded)
+                # Expose plugin manager to executor and planner
+                try:
+                    if hasattr(self, "executor") and self.executor is not None:
+                        self.executor.plugin_manager = self.plugin_manager
+                    if hasattr(self, "planner") and self.planner is not None:
+                        try:
+                            self.planner.set_plugin_registry(self.plugin_manager.get_registry())
+                        except Exception:
+                            pass
+                except Exception:
+                    self.logger.exception("Failed to attach plugin manager to subsystems")
+        except Exception:
+            # Plugin loading must not crash EchoBrain
+            self.logger.exception("PluginManager failed to initialize")
+            self.plugin_manager = None
+
+    def reload_plugins(self) -> int:
+        """Reload plugins at runtime via PluginManager."""
+        if getattr(self, "plugin_manager", None) is None:
+            return 0
+        try:
+            return self.plugin_manager.reload_plugins()
+        except Exception:
+            self.logger.exception("reload_plugins failed")
+            return 0
+
+    def shutdown_plugins(self) -> None:
+        if getattr(self, "plugin_manager", None) is None:
+            return
+        try:
+            self.plugin_manager.shutdown_plugins()
+        except Exception:
+            self.logger.exception("shutdown_plugins failed")
+
+    def start_runtime(self) -> None:
+        if getattr(self, "agent_runtime", None) is None:
+            return
+        self.agent_runtime.start()
+
+    def stop_runtime(self) -> None:
+        if getattr(self, "agent_runtime", None) is None:
+            return
+        self.agent_runtime.stop()
+
+    def pause_runtime(self) -> None:
+        if getattr(self, "agent_runtime", None) is None:
+            return
+        self.agent_runtime.pause()
+
+    def resume_runtime(self) -> None:
+        if getattr(self, "agent_runtime", None) is None:
+            return
+        self.agent_runtime.resume()
+
+    def schedule_goal(
+        self,
+        goal_id: str,
+        run_at: datetime.datetime,
+        recurrence: str = "once",
+    ) -> Any:
+        if getattr(self, "scheduler", None) is None:
+            return None
+        return self.scheduler.schedule_goal(goal_id, run_at, recurrence)
+
+    def cancel_schedule(self, schedule_id: str) -> bool:
+        if getattr(self, "scheduler", None) is None:
+            return False
+        return self.scheduler.cancel_schedule(schedule_id)
+
+    def get_schedules(self) -> list[dict[str, Any]]:
+        if getattr(self, "scheduler", None) is None:
+            return []
+        return [entry.to_dict() for entry in self.scheduler.get_schedules()]
 
     def load_vision(self):
 
         if self.capture is None:
-
-            print("Loading Vision Engine...")
-
-            self.capture = ScreenCapture()
-            self.reader = ScreenReader()
-            self.analyzer = ScreenAnalyzer()
+            self.logger.info("Lazy-loading Vision Engine")
+            try:
+                self.capture = ScreenCapture()
+                self.reader = ScreenReader()
+                self.analyzer = ScreenAnalyzer()
+            except Exception:
+                self.logger.exception("Failed to initialize Vision components")
+                self.capture = None
+                self.reader = None
+                self.analyzer = None
 
     def _build_context_prompt(self, command: str, memory_context: str | None = None) -> str | None:
         if self.context_engine is None:
@@ -284,6 +389,212 @@ class EchoBrain:
 
         return None
 
+    def _resolve_goal(self, identifier: str | None = None):
+        if self.goal_manager is None:
+            return None
+        if identifier is None:
+            return self.goal_manager.get_next_goal()
+        return self.goal_manager.find_goal(identifier) or self.goal_manager.get_goal(identifier)
+
+    def create_goal(
+        self,
+        title: str,
+        description: str | None = None,
+        priority: int = 50,
+        dependencies: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
+    ):
+        return self.goal_manager.create_goal(title, description, priority, dependencies, metadata)
+
+    def remove_goal(self, goal_id: str) -> bool:
+        return self.goal_manager.remove_goal(goal_id)
+
+    def pause_goal(self, goal_id: str) -> bool:
+        return self.goal_manager.pause_goal(goal_id)
+
+    def resume_goal(self, goal_id: str) -> bool:
+        return self.goal_manager.resume_goal(goal_id)
+
+    def cancel_goal(self, goal_id: str) -> bool:
+        return self.goal_manager.cancel_goal(goal_id)
+
+    def complete_goal(self, goal_id: str) -> bool:
+        return self.goal_manager.complete_goal(goal_id)
+
+    def list_goals(self, status: str | None = None) -> list[dict[str, Any]]:
+        if status:
+            goals = self.goal_manager.get_goals_by_status(status)
+        else:
+            goals = self.goal_manager.get_all_goals()
+        return [goal.to_dict() for goal in goals]
+
+    def goal_status(self, goal_id: str | None = None) -> dict[str, Any] | None:
+        goal = self._resolve_goal(goal_id)
+        return goal.to_dict() if goal is not None else None
+
+    def history(self) -> dict[str, Any]:
+        return {
+            "goals": [goal.to_dict() for goal in self.goal_manager.get_all_goals()],
+            "total_goals": len(self.goal_manager.get_all_goals()),
+        }
+
+    def run_goal(self, goal_id: str | None = None):
+        goal = self._resolve_goal(goal_id)
+        if goal is None:
+            return "No active goal available to run."
+        if goal.status == GoalStatus.Completed:
+            return f"Goal '{goal.title}' is already completed."
+        if goal.status == GoalStatus.Cancelled:
+            return f"Goal '{goal.title}' was cancelled and cannot be resumed."
+
+        if goal.status != GoalStatus.Running:
+            self.goal_manager.resume_goal(goal.id)
+
+        self.history_engine.record_goal_event(goal, "execution_started", f"Running goal '{goal.title}'.")
+
+        plan = self.planner.plan(goal.description or goal.title)
+        if plan is None:
+            plan = ExecutionPlan(
+                goal=goal.description or goal.title,
+                steps=[
+                    PlanStep(
+                        id="fallback",
+                        tool=goal.description or goal.title,
+                        action="Generate response",
+                        description="Fallback to LLM for the goal.",
+                        expected_result="A response generated by the language model.",
+                        engine="LLM",
+                    )
+                ],
+                required_capabilities=["LLM"],
+                reasoning="Fallback plan when no specific goal plan applies.",
+                expected_result="Provide a helpful answer with the LLM.",
+            )
+
+        execution_result = self.executor.execute_plan(plan, goal.description or goal.title)
+        if execution_result.status == "SUCCESS":
+            self.goal_manager.complete_goal(goal.id)
+            self.history_engine.record_goal_event(goal, "execution_completed", "Goal completed successfully.")
+        else:
+            goal.status = GoalStatus.Failed
+            goal.updated_at = datetime.datetime.now().isoformat()
+            self.goal_manager.save()
+            self.history_engine.record_goal_event(goal, "execution_failed", execution_result.final_response)
+
+        self.history_engine.record_plan(plan, execution_result.status, execution_result, goal.id)
+
+        feedback = self.reflection_engine.review_execution(goal.description or goal.title, plan, execution_result)
+        self.history_engine.record_reflection(feedback)
+        try:
+            self.planner.receive_feedback(feedback)
+        except Exception:
+            pass
+
+        self.memory_engine.add_interaction(f"Goal: {goal.title}", execution_result.final_response)
+        self.memory_engine.learn(
+            command=goal.description or goal.title,
+            capability="Goal",
+            success=(execution_result.status == "SUCCESS"),
+            response=execution_result.final_response,
+            duration=execution_result.execution_time,
+            engine="GoalManager",
+        )
+
+        return execution_result
+
+    def _format_goal_list(self, goals: list[dict[str, Any]]) -> str:
+        if not goals:
+            return "No goals available."
+        lines = []
+        for goal in goals:
+            lines.append(
+                f"[{goal['status']}] {goal['title']} (priority={goal['priority']}, progress={goal['progress']}%)"
+            )
+        return "\n".join(lines)
+
+    def _continue_goal(self) -> str:
+        next_goal = self.goal_manager.get_next_goal()
+        if next_goal is None:
+            return "There is no active goal to continue right now."
+        result = self.run_goal(next_goal.id)
+        if isinstance(result, str):
+            return result
+        return result.final_response if hasattr(result, "final_response") else str(result)
+
+    def _retry_failed_goal(self) -> str:
+        failed_goals = self.goal_manager.get_goals_by_status("Failed")
+        if not failed_goals:
+            return "There are no failed goals to retry."
+        latest = max(
+            failed_goals,
+            key=lambda goal: getattr(goal, "updated_at", getattr(goal, "created_at", "")),
+        )
+        latest.status = GoalStatus.Pending
+        latest.updated_at = datetime.datetime.now().isoformat()
+        self.goal_manager.save()
+        result = self.run_goal(latest.id)
+        if isinstance(result, str):
+            return result
+        return result.final_response if hasattr(result, "final_response") else str(result)
+
+    def _handle_goal_command(self, command: str) -> str | dict[str, Any] | None:
+        if self.goal_manager is None:
+            return None
+
+        normalized = command.strip().lower()
+
+        create_match = re.match(
+            r"^(?:create|add|set)\s+(?:a\s+)?goal(?:\s+to)?\s+(.+)$",
+            command.strip(),
+            re.IGNORECASE,
+        )
+        if create_match:
+            title = create_match.group(1).strip()
+            goal = self.goal_manager.create_goal(title, description=title)
+            return f"Created goal: {goal.title}."
+
+        if normalized in ("continue my work", "continue work", "resume my work", "continue", "continue goal"):
+            return self._continue_goal()
+
+        if normalized in ("pause all goals", "pause goals", "pause current goal"):
+            active = self.goal_manager.get_active_goals()
+            if not active:
+                return "There are no active goals to pause."
+            for goal in active:
+                self.goal_manager.pause_goal(goal.id)
+            return f"Paused {len(active)} active goal(s)."
+
+        if normalized in ("cancel current goal", "cancel goal", "cancel work"):
+            active = self.goal_manager.get_active_goals()
+            if not active:
+                return "There are no active goals to cancel."
+            goal = active[0]
+            self.goal_manager.cancel_goal(goal.id)
+            return f"Cancelled goal: {goal.title}."
+
+        if normalized in ("show active goals", "list active goals", "active goals"):
+            return self._format_goal_list([g.to_dict() for g in self.goal_manager.get_active_goals()])
+
+        if normalized in ("show completed goals", "list completed goals", "completed goals"):
+            return self._format_goal_list([g.to_dict() for g in self.goal_manager.get_goals_by_status("Completed")])
+
+        if normalized in ("what am i working on", "what am i working on?", "current goal"):
+            active = self.goal_manager.get_active_goals()
+            if not active:
+                return "You have no active goals at the moment."
+            return self._format_goal_list([g.to_dict() for g in active])
+
+        if normalized in ("continue yesterday's work", "resume yesterday's work", "resume yesterday's work"):
+            return self._continue_goal()
+
+        if normalized in ("retry failed task", "retry failed goals", "retry failed goal"):
+            return self._retry_failed_goal()
+
+        if normalized in ("goal history", "show goal history"):
+            return self._format_goal_list([g.to_dict() for g in self.goal_manager.get_all_goals()])
+
+        return None
+
     def process(self, command: str, return_structured: bool = False) -> str | dict[str, Any]:
         """Process a user command through the unified intelligence runtime."""
         print("[EchoBrain] Received request")
@@ -296,60 +607,81 @@ class EchoBrain:
             except Exception:
                 pass
 
-        route_result = None
-        if self.router is not None:
-            try:
-                route_result = self.router.route(command)
-            except Exception:
-                route_result = None
+        # Support runtime plugin reload commands
+        normalized_cmd = command.strip().lower()
+        if normalized_cmd in ("reload plugins", "reload plugin", "reload plugin(s)", "refresh plugins", "refresh plugin"):
+            count = self.reload_plugins()
+            return f"Reloaded {count} plugins."
 
-        memory_response = self._handle_memory_command(command)
-        if memory_response is not None:
+        goal_response = self._handle_goal_command(command)
+        if goal_response is not None:
             plan = None
             result = None
-            final_response = memory_response
-            engines_used = ["Memory"]
-        elif isinstance(route_result, str) and route_result.lower() in {
-            "greeting",
-            "internet",
-            "knowledge",
-            "memory",
-            "vision",
-            "time",
-            "screenshot",
-            "voice",
-        }:
-            plan = None
-            result = None
-            final_response, engine_used = self._handle_legacy_route(route_result.lower(), command)
-            engines_used = [engine_used]
-        else:
-            plan = self.planner.plan(command)
-
-            if plan is None:
-                print("[Planner] No plan generated, falling back to LLM.")
-                plan = ExecutionPlan(
-                    goal=command,
-                    steps=[
-                        PlanStep(
-                            id="fallback",
-                            tool=command,
-                            action="Generate response",
-                            description="Fallback to LLM for the user request.",
-                            expected_result="A response generated by the language model.",
-                            engine="LLM",
-                        )
-                    ],
-                    required_capabilities=["LLM"],
-                    reasoning="Fallback plan when no specific capability route applies.",
-                    expected_result="Provide a helpful answer with the LLM.",
-                )
+            if isinstance(goal_response, str):
+                final_response = goal_response
+            elif hasattr(goal_response, "final_response"):
+                final_response = goal_response.final_response
+                result = goal_response
+            elif isinstance(goal_response, dict):
+                final_response = str(goal_response.get("result", goal_response.get("message", goal_response)))
             else:
-                print(f"[Planner] Generated plan with capabilities: {plan.required_capabilities}")
+                final_response = str(goal_response)
+            engines_used = ["GoalManager"]
+        else:
+            route_result = None
+            if self.router is not None:
+                try:
+                    route_result = self.router.route(command)
+                except Exception:
+                    route_result = None
 
-            result = self.executor.execute_plan(plan, command)
-            final_response = result.final_response
-            engines_used = result.engines_used
+            memory_response = self._handle_memory_command(command)
+            if memory_response is not None:
+                plan = None
+                result = None
+                final_response = memory_response
+                engines_used = ["Memory"]
+            elif isinstance(route_result, str) and route_result.lower() in {
+                "greeting",
+                "internet",
+                "knowledge",
+                "memory",
+                "vision",
+                "time",
+                "screenshot",
+                "voice",
+            }:
+                plan = None
+                result = None
+                final_response, engine_used = self._handle_legacy_route(route_result.lower(), command)
+                engines_used = [engine_used]
+            else:
+                plan = self.planner.plan(command)
+
+                if plan is None:
+                    print("[Planner] No plan generated, falling back to LLM.")
+                    plan = ExecutionPlan(
+                        goal=command,
+                        steps=[
+                            PlanStep(
+                                id="fallback",
+                                tool=command,
+                                action="Generate response",
+                                description="Fallback to LLM for the user request.",
+                                expected_result="A response generated by the language model.",
+                                engine="LLM",
+                            )
+                        ],
+                        required_capabilities=["LLM"],
+                        reasoning="Fallback plan when no specific capability route applies.",
+                        expected_result="Provide a helpful answer with the LLM.",
+                    )
+                else:
+                    print(f"[Planner] Generated plan with capabilities: {plan.required_capabilities}")
+
+                result = self.executor.execute_plan(plan, command)
+                final_response = result.final_response
+                engines_used = result.engines_used
 
         if self.context_engine is not None:
             try:

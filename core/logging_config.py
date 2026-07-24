@@ -1,0 +1,45 @@
+import logging
+import logging.handlers
+import os
+from pathlib import Path
+from typing import Optional
+
+from .config import get_config
+
+
+def setup_logging(level: Optional[str] = None) -> None:
+    cfg = get_config()
+    log_cfg = cfg.get("logging", {})
+    level_name = (level or log_cfg.get("level") or "INFO").upper()
+    level_val = getattr(logging, level_name, logging.INFO)
+
+    log_dir = Path(log_cfg.get("dir", "logs"))
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    logger = logging.getLogger("echodesk")
+    if logger.handlers:
+        # already configured
+        logger.setLevel(level_val)
+        return
+
+    logger.setLevel(level_val)
+    fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+
+    console = logging.StreamHandler()
+    console.setFormatter(fmt)
+    console.setLevel(level_val)
+    logger.addHandler(console)
+
+    log_file = log_dir / "echodesk.log"
+    max_bytes = int(log_cfg.get("max_bytes", 1048576))
+    backups = int(log_cfg.get("backup_count", 3))
+
+    file_handler = logging.handlers.RotatingFileHandler(
+        filename=str(log_file), maxBytes=max_bytes, backupCount=backups, encoding="utf-8"
+    )
+    file_handler.setFormatter(fmt)
+    file_handler.setLevel(level_val)
+    logger.addHandler(file_handler)
+
+    # propagate to root so other modules use the same handlers by name
+    logging.getLogger().setLevel(level_val)

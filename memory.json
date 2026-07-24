@@ -869,6 +869,151 @@
             "time": "2026-07-24 11:32:51.125056",
             "user": "hello",
             "EchoDesk": "Hello from the LLM."
+        },
+        {
+            "time": "2026-07-24 16:42:43.782106",
+            "user": "Search today's AI news and summarize it.",
+            "EchoDesk": "[Internet] {'status': 'not_implemented', 'query': \"Search today's AI news and summarize it.\"}\n[LLM] OllamaProvider timeout error: server did not respond in time."
+        },
+        {
+            "time": "2026-07-24 19:40:54.458501",
+            "user": "Explain recursion.",
+            "EchoDesk": "The AI assistant is unavailable right now. Please try again later."
+        },
+        {
+            "time": "2026-07-24 19:40:54.679500",
+            "user": "remember Buy milk",
+            "EchoDesk": "I'll remember that Buy milk."
+        },
+        {
+            "time": "2026-07-24 19:40:54.867936",
+            "user": "What happened in AI today?",
+            "EchoDesk": "Internet search summary."
+        },
+        {
+            "time": "2026-07-24 19:40:55.069997",
+            "user": "Explain recursion.",
+            "EchoDesk": "An explanation from the LLM."
+        },
+        {
+            "time": "2026-07-24 19:40:55.250193",
+            "user": "hello",
+            "EchoDesk": "Hello from the LLM."
+        },
+        {
+            "time": "2026-07-24 19:40:55.407354",
+            "user": "Read the error on my screen.",
+            "EchoDesk": "Screen analysis result."
+        },
+        {
+            "time": "2026-07-24 19:40:55.576112",
+            "user": "create goal Learn the new feature",
+            "EchoDesk": "Created goal: Learn the new feature."
+        },
+        {
+            "time": "2026-07-24 19:40:55.816827",
+            "user": "continue my work",
+            "EchoDesk": "[LLM] Task completed"
+        },
+        {
+            "time": "2026-07-24 19:40:56.043361",
+            "user": "create goal Finish project",
+            "EchoDesk": "Created goal: Finish project."
+        },
+        {
+            "time": "2026-07-24 19:40:56.142573",
+            "user": "show active goals",
+            "EchoDesk": "[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)"
+        },
+        {
+            "time": "2026-07-24 19:40:56.322068",
+            "user": "create goal Finish task",
+            "EchoDesk": "Created goal: Finish task."
+        },
+        {
+            "time": "2026-07-24 19:40:56.558294",
+            "user": "retry failed goal",
+            "EchoDesk": "[LLM] Task completed"
+        },
+        {
+            "time": "2026-07-24 19:40:56.813976",
+            "user": "hello",
+            "EchoDesk": "Answer from LLM."
+        },
+        {
+            "time": "2026-07-24 19:40:56.956940",
+            "user": "hello",
+            "EchoDesk": "Hello from the LLM."
+        },
+        {
+            "time": "2026-07-24 19:43:06.371705",
+            "user": "Explain recursion.",
+            "EchoDesk": "The AI assistant is unavailable right now. Please try again later."
+        },
+        {
+            "time": "2026-07-24 19:43:06.571813",
+            "user": "remember Buy milk",
+            "EchoDesk": "I'll remember that Buy milk."
+        },
+        {
+            "time": "2026-07-24 19:43:06.812630",
+            "user": "What happened in AI today?",
+            "EchoDesk": "Internet search summary."
+        },
+        {
+            "time": "2026-07-24 19:43:07.037626",
+            "user": "Explain recursion.",
+            "EchoDesk": "An explanation from the LLM."
+        },
+        {
+            "time": "2026-07-24 19:43:07.254659",
+            "user": "hello",
+            "EchoDesk": "Hello from the LLM."
+        },
+        {
+            "time": "2026-07-24 19:43:07.515473",
+            "user": "Read the error on my screen.",
+            "EchoDesk": "Screen analysis result."
+        },
+        {
+            "time": "2026-07-24 19:43:07.702260",
+            "user": "create goal Learn the new feature",
+            "EchoDesk": "Created goal: Learn the new feature."
+        },
+        {
+            "time": "2026-07-24 19:43:07.996050",
+            "user": "continue my work",
+            "EchoDesk": "[LLM] Task completed"
+        },
+        {
+            "time": "2026-07-24 19:43:08.439876",
+            "user": "create goal Finish project",
+            "EchoDesk": "Created goal: Finish project."
+        },
+        {
+            "time": "2026-07-24 19:43:08.524256",
+            "user": "show active goals",
+            "EchoDesk": "[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)"
+        },
+        {
+            "time": "2026-07-24 19:43:08.687412",
+            "user": "create goal Finish task",
+            "EchoDesk": "Created goal: Finish task."
+        },
+        {
+            "time": "2026-07-24 19:43:08.874679",
+            "user": "retry failed goal",
+            "EchoDesk": "[LLM] Task completed"
+        },
+        {
+            "time": "2026-07-24 19:43:09.019694",
+            "user": "hello",
+            "EchoDesk": "Answer from LLM."
+        },
+        {
+            "time": "2026-07-24 19:43:09.103371",
+            "user": "hello",
+            "EchoDesk": "Hello from the LLM."
         }
     ],
     "facts": [

@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.0.0] - 2026-07-24
+
+### Added
+
+- Production release: EchoDesk v3.0
+- Centralized configuration (core/config.py)
+- Centralized logging with rotation (core/logging_config.py)
+- Lazy loading of heavy engines (LLM, Vision, Voice) in TaskExecutor
+- Health checks and startup diagnostics
+- Scheduler, History, Reflection improvements
+- Release packaging stubs and documentation
+
 ## [1.0.0] - 2026-07-22
 
 ### Added

@@ -120,16 +120,28 @@ class PlannerEngine:
     structured execution plan. It never executes actions itself.
     """
 
-    def __init__(self, automation_engine: Any | None = None, learning_engine: Any | None = None):
+    def __init__(self, automation_engine: Any | None = None, learning_engine: Any | None = None, plugin_registry: Any | None = None):
         """Initialize the planner engine.
 
         Args:
             automation_engine: Optional automation engine instance used for
                 validating automation-related plans without executing them.
             learning_engine: Optional learning engine providing preferences.
+            plugin_registry: Optional PluginRegistry instance for plugin-aware planning.
         """
         self.automation_engine = automation_engine
         self.learning_engine = learning_engine
+        self.plugin_registry = plugin_registry
+
+    def set_plugin_registry(self, registry: Any | None) -> None:
+        self.plugin_registry = registry
+
+    def receive_feedback(self, feedback: dict[str, Any]) -> None:
+        if not feedback:
+            return
+        if not hasattr(self, "feedback_history"):
+            self.feedback_history = []
+        self.feedback_history.append(feedback)
 
     def plan(self, command: str) -> ExecutionPlan | None:
         """Translate a user goal into a structured execution plan.
@@ -147,6 +159,33 @@ class PlannerEngine:
         text = command.strip().lower()
         if not text:
             return None
+
+        # If a plugin registry is available and a plugin supports this command,
+        # create a plan that executes the plugin instead of built-in engines.
+        try:
+            if self.plugin_registry is not None and self.plugin_registry.supports(command):
+                # Create a plan with a single task that delegates to Plugin capability
+                plan = ExecutionPlan(goal=command)
+                plan.add_task(Task(id=str(uuid.uuid4()), description="Execute plugin capable of handling the command.", capability="Plugin"))
+                plan.required_capabilities = ["Plugin"]
+                plan.reasoning = "Handled by plugin"
+                return plan
+        except Exception:
+            # If plugin registry check fails, fall back to normal planning
+            pass
+
+        if getattr(self, "feedback_history", None):
+            last_feedback = self.feedback_history[-1]
+            if last_feedback.get("command") == command and last_feedback.get("replan_recommended"):
+                rebased_plan = ExecutionPlan(goal=command)
+                rebased_plan.add_task(Task(
+                    id=str(uuid.uuid4()),
+                    description="Retry the request with the LLM after reflection feedback.",
+                    capability="LLM",
+                ))
+                rebased_plan.required_capabilities = ["LLM"]
+                rebased_plan.reasoning = "Replan after reflection feedback"
+                return rebased_plan
 
         routines = [
             self._plan_open_app_and_search,

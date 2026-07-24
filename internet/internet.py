@@ -171,8 +171,11 @@ class InternetEngine:
         if self.llm_engine is None:
             return text
 
+        # Prevent sending oversized internet content to the LLM
+        max_chars = 2000
+        safe_text = text if len(text) <= max_chars else text[:max_chars]
         try:
-            summary = self.llm_engine.summarize(text)
+            summary = self.llm_engine.summarize(safe_text)
             if not isinstance(summary, str) or not summary.strip():
                 return text
 
