@@ -19,7 +19,7 @@ from .plugin_validator import PluginValidator
 class PluginManager:
     """Discover, instantiate and register plugins found under the 'plugins' package."""
 
-    def __init__(self, plugins_package_path: str = None, permissions: PluginPermissions | None = None):
+    def __init__(self, plugins_package_path: str = None, permissions: PluginPermissions | None = None, security_engine: Any | None = None):
         self.logger = logging.getLogger("echodesk.plugin_manager")
         self.registry = PluginRegistry()
         self.permissions = permissions or PluginPermissions()
@@ -28,6 +28,7 @@ class PluginManager:
         self.metadata: dict[str, PluginMetadata] = {}
         self.execution_log: list[dict[str, Any]] = []
         self.learning_engine: Any | None = None
+        self.security_engine = security_engine
         if not self.logger.handlers:
             os.makedirs("logs", exist_ok=True)
             handler = logging.FileHandler(os.path.join("logs", "plugins.log"), encoding="utf-8")
@@ -231,6 +232,11 @@ class PluginManager:
         """Execute only an enabled handler whose declared permissions are granted."""
         plugin = self.registry.find_handler(command)
         if plugin is None: return None
+        if self.security_engine is not None:
+            decision = self.security_engine.authorize(command, f"plugin:{plugin.name}", "Plugin command", permission="plugins")
+            if not decision.allowed:
+                self._record_execution(plugin.name, command, False, decision.reason)
+                return {"success": False, "message": decision.reason, "approval_id": decision.approval_id}
         if not self.permissions.allows(list(getattr(plugin, "permissions", []))):
             self.logger.warning("Permission denied plugin=%s", plugin.name)
             self._record_execution(plugin.name, command, False, "permission_denied")

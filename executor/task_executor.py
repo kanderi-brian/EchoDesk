@@ -55,6 +55,7 @@ class TaskExecutor:
         retry_limit: int = 2,
         task_timeout: float = 30.0,
         record_learning: bool = True,
+        security_engine: Any | None = None,
     ) -> None:
         self.logger = logging.getLogger("echodesk.executor")
         self.memory_engine = memory_engine or MemoryEngine()
@@ -69,6 +70,7 @@ class TaskExecutor:
         self.retry_limit = max(0, int(retry_limit))
         self.task_timeout = float(task_timeout)
         self.record_learning = bool(record_learning)
+        self.security_engine = security_engine
 
     def execute_plan(self, plan: ExecutionPlan, command: str) -> ExecutionResult:
         """Execute the provided plan by running tasks sequentially."""
@@ -131,6 +133,12 @@ class TaskExecutor:
         capability_key = capability.casefold()
         engine_name = capability.title()
         self.logger.debug("[Task] %s -> %s", task.description, engine_name)
+        security = self.security_engine
+        if security is not None:
+            permission = {"internet": "internet", "memory": "memory", "plugin": "plugins"}.get(capability_key)
+            decision = security.authorize(command, "task_executor", task.description, permission=permission)
+            if not decision.allowed:
+                return {"success": False, "message": decision.reason, "approval_id": decision.approval_id}
 
         # If this task explicitly requests a Plugin capability, run the plugin and return.
         try:

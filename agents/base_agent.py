@@ -28,6 +28,13 @@ class BaseAgent(ABC):
         started = time.perf_counter()
         self.logger.info("assigned task=%s goal=%s", task.id, task.parent_goal)
         try:
+            security = self.services.get("security_engine")
+            if security is not None:
+                decision = security.authorize(task.description, f"agent:{self.name}", "Specialist agent task")
+                if not decision.allowed:
+                    result = AgentResult(task.id, self.name, False, error=decision.reason)
+                    context.complete(result)
+                    return result
             result = self.execute(task, context)
             result.duration_seconds = time.perf_counter() - started
             self.metrics["completed_tasks" if result.success else "failures"] += 1

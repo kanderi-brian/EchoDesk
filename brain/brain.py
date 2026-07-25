@@ -20,6 +20,7 @@ from scheduler.scheduler import Scheduler
 from agent.project_agent import ProjectAgent
 from agents import AgentContext, AgentRegistry, AgentScheduler, CodingAgent, DesktopAgent, MemoryAgent, PlannerAgent, ResearchAgent, VisionAgent
 from learning import LearningEngine
+from security import SecurityEngine
 
 # configuration and logging
 from core.config import get_config
@@ -54,6 +55,8 @@ class EchoBrain:
 
         self.memory_engine = MemoryEngine()
         self.learning_engine = LearningEngine(self.memory_engine)
+        self.security_engine = SecurityEngine(get_config().get("security", {}).get("policy", "balanced"))
+        self.security_engine.set_learning_engine(self.learning_engine)
 
         # Goal management and execution pipeline
         self.goal_manager = GoalManager()
@@ -74,11 +77,13 @@ class EchoBrain:
             llm_engine=self.llm_engine if getattr(self, 'llm_engine', None) is not None else None,
             plugin_manager=None,
             record_learning=False,
+            security_engine=self.security_engine,
         )
         self.project_agent = ProjectAgent(
             planner=self.planner,
             executor=self.executor,
             memory_engine=self.memory_engine,
+            security_engine=self.security_engine,
         )
         # Phase 17 collaboration is additive: EchoBrain remains the entry point
         # while specialists exchange only AgentTask/AgentResult messages.
@@ -86,7 +91,7 @@ class EchoBrain:
             "planner": self.planner, "executor": self.executor,
             "memory_engine": self.memory_engine, "knowledge_engine": self.knowledge,
             "internet_engine": self.internet_engine, "desktop_controller": self.desktop_controller,
-            "vision_engine": None, "learning_engine": self.learning_engine,
+            "vision_engine": None, "learning_engine": self.learning_engine, "security_engine": self.security_engine,
         }
         self.agent_registry = AgentRegistry()
         for specialist in (PlannerAgent(**services), CodingAgent(**services), ResearchAgent(**services), DesktopAgent(**services), VisionAgent(**services), MemoryAgent(**services)):
@@ -112,7 +117,7 @@ class EchoBrain:
             else:
                 from plugins.plugin_manager import PluginManager
 
-                self.plugin_manager = PluginManager()
+                self.plugin_manager = PluginManager(security_engine=self.security_engine)
                 loaded = self.plugin_manager.load_plugins()
                 self.logger.info("[PluginManager] Loaded %d plugins", loaded)
                 # Expose plugin manager to executor and planner
@@ -184,6 +189,13 @@ class EchoBrain:
     def get_learning_summary(self) -> dict[str, Any]:
         """Return safe, explainable learning metadata for the dashboard."""
         return self.learning_engine.get_statistics()
+
+    def get_security_summary(self) -> dict[str, Any]:
+        """Expose security posture and recent redacted audit events."""
+        summary = self.security_engine.summary()
+        if getattr(self, "plugin_manager", None) is not None:
+            summary["plugin_security_status"] = self.plugin_manager.list_plugins()
+        return summary
 
     def run_agent_tasks(self, tasks: list[Any], parallel: bool = True) -> dict[str, Any]:
         """Dispatch structured AgentTask instances through the collaboration scheduler."""

@@ -78,6 +78,22 @@ The bundled examples are `system_info`, `git`, `github`, `calendar`, and
 restricted with `PluginPermissions(granted=...)`; execution is denied whenever
 a plugin has not been granted every declared permission.
 
+## Security and Safety
+
+Phase 20 adds a centralized `SecurityEngine` used by EchoBrain, agents,
+ProjectAgent, TaskExecutor, and plugin execution. It classifies actions as low,
+medium, or high risk and applies the active configurable policy (`safe`,
+`balanced`, or developer-only `unrestricted`). High-risk actions such as file
+deletion, installation, system changes, unknown executables, downloaded
+scripts, credential access, and policy changes require an explicit approval.
+
+`PermissionManager` enforces fine-grained access for internet, files, desktop
+control, processes, clipboard, microphone, camera, plugins, learning, and
+memory. `CredentialManager` keeps credentials encrypted in a session-only
+vault; names may be listed but secrets are never logged. Security events and
+redacted approval decisions are retained in `logs/security.log`. The dashboard
+is available through `EchoBrain.get_security_summary()`.
+
 ## Autonomous Project Agent
 
 `ProjectAgent` adds an autonomous orchestration layer over the existing Brain,

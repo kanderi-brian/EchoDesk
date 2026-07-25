@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.6.0] - 2026-07-25
+
+### Added
+
+- Phase 20 centralized SecurityEngine with configurable safe, balanced, and developer-mode policies.
+- Approval, permission, credential, audit, session-cleanup, risk-classification, secure-recovery, and dashboard services.
+- Security enforcement for task execution, autonomous goals, specialist agents, plugin commands, and security-learning telemetry.
+
 ## [3.5.0] - 2026-07-25
 
 ### Added

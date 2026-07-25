@@ -66,6 +66,10 @@ class LearningEngine:
 
     record_learning_event = record_outcome
 
+    def record_security_event(self, event: str, success: bool, *, risk: str = "low", component: str = "security") -> StrategyRecord:
+        """Record security outcomes for analysis only; it never alters policy."""
+        return self.record_outcome(f"security:{event}", success, workflow=f"security:{component}", confidence=0.0, failure="" if success else risk)
+
     def recommend_strategy(self, goal: str, limit: int = 3) -> list[StrategyRecord]:
         terms = set(self._key(goal).split())
         records = [self._record(value) for value in self._store["strategies"].values()]

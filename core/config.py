@@ -6,6 +6,7 @@ from typing import Any, Dict
 DEFAULT_CONFIG = {
     "logging": {"level": "INFO", "dir": "logs", "max_bytes": 1048576, "backup_count": 3},
     "plugins": {"lazy_load": False},
+    "security": {"policy": "balanced"},
     "runtime": {"tick_interval": 5.0},
 }
 

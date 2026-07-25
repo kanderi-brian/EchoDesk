@@ -27,6 +27,7 @@ class ProjectAgent:
         vision_engine: Any | None = None,
         retry_limit: int = 2,
         approval_callback: Callable[[Goal], bool] | None = None,
+        security_engine: Any | None = None,
     ) -> None:
         self.planner = planner or PlannerEngine()
         self.executor = executor or TaskExecutor(memory_engine=memory_engine)
@@ -35,6 +36,7 @@ class ProjectAgent:
         self.vision_engine = vision_engine
         self.retry_limit = max(0, int(retry_limit))
         self.approval_callback = approval_callback
+        self.security_engine = security_engine
         self.goals: dict[str, Goal] = {}
         self._queue: deque[str] = deque()
         self._current_goal_id: str | None = None
@@ -120,7 +122,11 @@ class ProjectAgent:
         goal = self.goals[goal_id]
         if goal.status in (ExecutionState.CANCELLED, ExecutionState.COMPLETED):
             return goal
-        if self._needs_approval(goal) and not self._approved(goal):
+        if self.security_engine is not None:
+            decision = self.security_engine.authorize(goal.objective, "project_agent", "Autonomous project goal")
+            if not decision.allowed:
+                return self._transition(goal, ExecutionState.WAITING_APPROVAL, decision.reason)
+        elif self._needs_approval(goal) and not self._approved(goal):
             return self._transition(goal, ExecutionState.WAITING_APPROVAL, "Awaiting approval for sensitive operation.")
         self._current_goal_id = goal.id
         if not goal.steps:
@@ -193,6 +199,8 @@ class ProjectAgent:
         step.status = ExecutionState.QUEUED if step.retries <= self.retry_limit else ExecutionState.FAILED
         step.error = verification.message
         self._record(goal, step, "retry", verification.message)
+        if self.security_engine is not None:
+            self.security_engine.audit.log("secure_recovery", "project_agent", action=step.description, reason=verification.message)
         self._remember(goal, step, False)
         return step.retries <= self.retry_limit and self._run_step(goal, step)
 
