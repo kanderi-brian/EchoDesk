@@ -293,6 +293,54 @@ class DesktopController:
 
         return self._error("Unable to determine the active window.")
 
+    def click_element(self, element: Any, button: str = "left") -> dict[str, Any]:
+        """Click a Vision ``UIElement`` at its center rather than a fixed point."""
+        return self._act_on_element(element, "click", button=button)
+
+    def double_click_element(self, element: Any) -> dict[str, Any]:
+        """Double click a Vision ``UIElement`` at its semantic target location."""
+        return self._act_on_element(element, "double_click")
+
+    def right_click_element(self, element: Any) -> dict[str, Any]:
+        """Open the context menu for a Vision ``UIElement``."""
+        return self._act_on_element(element, "click", button="right")
+
+    def select_menu_item(self, element: Any) -> dict[str, Any]:
+        """Select a semantic menu item after it has been resolved by Vision."""
+        return self.click_element(element)
+
+    def type_into_element(self, element: Any, text: str) -> dict[str, Any]:
+        """Focus an editable Vision ``UIElement`` and type into it."""
+        if not bool(getattr(element, "editable", False)):
+            return self._error("The selected UI element is not editable.")
+        clicked = self.click_element(element)
+        return self.type_text(text) if clicked.get("success") else clicked
+
+    def hover_element(self, element: Any) -> dict[str, Any]:
+        center = getattr(element, "center", None)
+        return self.move_mouse(*center) if isinstance(center, tuple) and len(center) == 2 else self._error("Invalid UI element target.")
+
+    def scroll_container(self, element: Any, amount: int) -> dict[str, Any]:
+        hovered = self.hover_element(element)
+        return self.scroll(amount) if hovered.get("success") else hovered
+
+    def drag_element(self, element: Any, destination: Any, duration: float = 1.0) -> dict[str, Any]:
+        start, end = getattr(element, "center", None), getattr(destination, "center", None)
+        if not (isinstance(start, tuple) and isinstance(end, tuple)):
+            return self._error("Invalid UI element target.")
+        return self.drag_mouse(*start, *end, duration)
+
+    def _act_on_element(self, element: Any, action: str, button: str = "left") -> dict[str, Any]:
+        if not bool(getattr(element, "visible", False)) or not bool(getattr(element, "enabled", False)):
+            return self._error("The selected UI element is not available.")
+        center = getattr(element, "center", None)
+        if not isinstance(center, tuple) or len(center) != 2:
+            return self._error("Invalid UI element target.")
+        moved = self.move_mouse(*center)
+        if not moved.get("success"):
+            return moved
+        return self.double_click_mouse(button) if action == "double_click" else self.click_mouse(button)
+
     def _click(self, button: str) -> dict[str, Any]:
         if button not in self.VALID_BUTTONS:
             return self._error(f"Invalid mouse button: {button}.")

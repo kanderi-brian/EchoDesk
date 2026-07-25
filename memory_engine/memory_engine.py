@@ -83,6 +83,7 @@ class MemoryEngine:
         self.file_path = Path(file_path) if file_path else self.DEFAULT_DIR / self.DEFAULT_FILE
         self._ensure_storage_dir()
         self._payload = self._load_payload()
+        self._dirty = False
         print("[Memory] Loaded")
 
     def remember_fact(self, subject: str, value: str) -> str | None:
@@ -328,88 +329,93 @@ class MemoryEngine:
         return None
 
     def learn(
-        self,
-        command: str,
-        capability: str | None = None,
-        success: bool = True,
-        response: str | None = None,
-        duration: float | None = None,
-        engine: str | None = None,
-        record_command: bool = True,
+       self,
+       command: str,
+       capability: str | None = None,
+       success: bool = True,
+       response: str | None = None,
+       duration: float | None = None,
+       engine: str | None = None,
+       record_command: bool = True,
+       auto_flush: bool = True,
     ) -> None:
-        if not isinstance(command, str) or not command.strip():
-            return
+       if not isinstance(command, str) or not command.strip():
+           return
 
-        normalized_command = self._normalize_command(command)
-        stats = self._payload.setdefault("command_stats", [])
-        command_entry = self._find_command_entry(normalized_command)
-        now = self._timestamp()
+       normalized_command = self._normalize_command(command)
+       stats = self._payload.setdefault("command_stats", [])
+       command_entry = self._find_command_entry(normalized_command)
+       now = self._timestamp()
 
-        if command_entry is None:
-            command_entry = {
-                "command": command.strip(),
-                "normalized": normalized_command,
-                "frequency": 1,
-                "last_used": now,
-                "length": len(command.strip()),
-                "success_count": 1 if success else 0,
-                "fail_count": 0 if success else 1,
-                "last_response": response or "",
-            }
-            stats.append(command_entry)
-        else:
-            command_entry["frequency"] += 1
-            command_entry["last_used"] = now
-            command_entry["length"] = len(command.strip())
-            command_entry["success_count"] += 1 if success else 0
-            command_entry["fail_count"] += 0 if success else 1
-            command_entry["last_response"] = response or command_entry.get("last_response", "")
+       if command_entry is None:
+           command_entry = {
+               "command": command.strip(),
+               "normalized": normalized_command,
+               "frequency": 1,
+               "last_used": now,
+               "length": len(command.strip()),
+               "success_count": 1 if success else 0,
+               "fail_count": 0 if success else 1,
+               "last_response": response or "",
+           }
+           stats.append(command_entry)
+       else:
+           command_entry["frequency"] += 1
+           command_entry["last_used"] = now
+           command_entry["length"] = len(command.strip())
+           command_entry["success_count"] += 1 if success else 0
+           command_entry["fail_count"] += 0 if success else 1
+           command_entry["last_response"] = response or command_entry.get("last_response", "")
 
-        engine_name = engine or capability
-        if record_command:
-            self._payload["statistics"]["total_commands"] = self._payload["statistics"].get("total_commands", 0) + 1
-            self._payload["statistics"]["command_lengths_total"] = self._payload["statistics"].get("command_lengths_total", 0) + len(command)
-            self._payload["statistics"]["session_count"] = self._payload["statistics"].get("session_count", 0) + 1
-            self._payload["statistics"]["total_duration"] = self._payload["statistics"].get("total_duration", 0.0) + float(duration or 0.0)
-            self._payload["statistics"]["last_active"] = now
+       engine_name = engine or capability
+       if record_command:
+           self._payload["statistics"]["total_commands"] = self._payload["statistics"].get("total_commands", 0) + 1
+           self._payload["statistics"]["command_lengths_total"] = self._payload["statistics"].get("command_lengths_total", 0) + len(command)
+           self._payload["statistics"]["session_count"] = self._payload["statistics"].get("session_count", 0) + 1
+           self._payload["statistics"]["total_duration"] = self._payload["statistics"].get("total_duration", 0.0) + float(duration or 0.0)
+           self._payload["statistics"]["last_active"] = now
 
-            if capability:
-                counts = self._payload["statistics"].setdefault("capability_counts", {})
-                counts[capability] = counts.get(capability, 0) + 1
+           if capability:
+               counts = self._payload["statistics"].setdefault("capability_counts", {})
+               counts[capability] = counts.get(capability, 0) + 1
 
-            if engine_name:
-                engine_counts = self._payload["statistics"].setdefault("engine_counts", {})
-                engine_counts[engine_name] = engine_counts.get(engine_name, 0) + 1
+           if engine_name:
+               engine_counts = self._payload["statistics"].setdefault("engine_counts", {})
+               engine_counts[engine_name] = engine_counts.get(engine_name, 0) + 1
 
-            self.store_command_history(
-                command=command,
-                capabilities=[engine_name] if engine_name else [],
-                execution_time=float(duration or 0.0),
-                success=success,
-            )
-        else:
-            if engine_name:
-                engine_counts = self._payload["statistics"].setdefault("engine_counts", {})
-                engine_counts[engine_name] = engine_counts.get(engine_name, 0) + 1
-            self._payload["statistics"]["last_active"] = now
+           self.store_command_history(
+               command=command,
+               capabilities=[engine_name] if engine_name else [],
+               execution_time=float(duration or 0.0),
+               success=success,
+               auto_flush=False,
+           )
+       else:
+           if engine_name:
+               engine_counts = self._payload["statistics"].setdefault("engine_counts", {})
+               engine_counts[engine_name] = engine_counts.get(engine_name, 0) + 1
+           self._payload["statistics"]["last_active"] = now
 
-        if success:
-            self._payload["statistics"]["successful_executions"] = self._payload["statistics"].get("successful_executions", 0) + 1
-        else:
-            self._payload["statistics"]["failed_executions"] = self._payload["statistics"].get("failed_executions", 0) + 1
+       if success:
+           self._payload["statistics"]["successful_executions"] = self._payload["statistics"].get("successful_executions", 0) + 1
+       else:
+           self._payload["statistics"]["failed_executions"] = self._payload["statistics"].get("failed_executions", 0) + 1
 
-        self._update_statistics()
+       self._update_statistics()
 
-        for pref in self._infer_preferences(normalized_command):
-            self.remember_preference(
-                pref.category,
-                pref.key,
-                pref.value,
-                confidence=pref.confidence,
-                learned_from=PreferenceSource.BEHAVIOR.value,
-            )
+       for pref in self._infer_preferences(normalized_command):
+           self.remember_preference(
+               pref.category,
+               pref.key,
+               pref.value,
+               confidence=pref.confidence,
+               learned_from=PreferenceSource.BEHAVIOR.value,
+               auto_flush=False,
+           )
 
-        self._write_payload()
+       self._mark_dirty()
+       if auto_flush:
+           self._write_payload()
 
     def remember_preference(
         self,
@@ -418,6 +424,7 @@ class MemoryEngine:
         value: str,
         confidence: float = 0.5,
         learned_from: str = PreferenceSource.EXPLICIT.value,
+        auto_flush: bool = True,
     ) -> UserPreference | None:
         if not category or not key or not value:
             return None
@@ -441,7 +448,9 @@ class MemoryEngine:
                 pref["usage_count"] = 1
             pref["learned_from"] = learned_from
             pref["last_updated"] = now
-            self._write_payload()
+            self._mark_dirty()
+            if auto_flush:
+                self._write_payload()
             print("[Learning] Preference updated")
             return UserPreference.from_dict(pref)
 
@@ -455,7 +464,9 @@ class MemoryEngine:
             last_updated=now,
         )
         preferences.append(new_pref.to_dict())
-        self._write_payload()
+        self._mark_dirty()
+        if auto_flush:
+            self._write_payload()
         print("[Learning] Preference learned")
         return new_pref
 
@@ -711,10 +722,18 @@ class MemoryEngine:
 
     def _write_payload(self, payload: dict[str, Any] | None = None) -> None:
         payload = payload if payload is not None else self._payload
+        if not self._dirty and payload is self._payload:
+            return
         with open(self.file_path, "w", encoding="utf-8") as file:
             json.dump(payload, file, indent=4)
         self._payload = payload
+        self._dirty = False
         print("[Memory] Saved")
+
+    def flush(self) -> None:
+        """Persist any pending memory changes to disk."""
+        if self._dirty:
+            self._write_payload()
 
     def _default_statistics(self) -> dict[str, Any]:
         return {
@@ -744,7 +763,10 @@ class MemoryEngine:
         if not directory.exists():
             directory.mkdir(parents=True, exist_ok=True)
 
-    def add_interaction(self, user: str, assistant: str) -> None:
+    def _mark_dirty(self) -> None:
+        self._dirty = True
+
+    def add_interaction(self, user: str, assistant: str, auto_flush: bool = True) -> None:
         """Store a user-assistant interaction in short-term memory."""
         if not isinstance(user, str) or not isinstance(assistant, str):
             return
@@ -756,32 +778,40 @@ class MemoryEngine:
         }
 
         self._payload.setdefault("history", [])
-        self._payload["history"].append(entry)
-        self._payload["history"] = self._payload["history"][-self.MAX_HISTORY:]
-        self._write_payload()
-
-    def store_command_history(
-        self,
-        command: str,
-        capabilities: list[str],
-        execution_time: float,
-        success: bool,
-    ) -> None:
-        if not isinstance(command, str) or not command.strip():
+        if self._payload["history"] and self._payload["history"][-1].get("user") == entry["user"] and self._payload["history"][-1].get("assistant") == entry["assistant"]:
             return
 
-        entry = {
-            "timestamp": self._timestamp(),
-            "command": command.strip(),
-            "capabilities": capabilities,
-            "execution_time": float(execution_time),
-            "success": bool(success),
-        }
+        self._payload["history"].append(entry)
+        self._payload["history"] = self._payload["history"][-self.MAX_HISTORY:]
+        self._mark_dirty()
+        if auto_flush:
+            self._write_payload()
 
-        self._payload.setdefault("command_history", [])
-        self._payload["command_history"].append(entry)
-        self._payload["command_history"] = self._payload["command_history"][-100:]
-        self._write_payload()
+    def store_command_history(
+       self,
+       command: str,
+       capabilities: list[str],
+       execution_time: float,
+       success: bool,
+       auto_flush: bool = True,
+    ) -> None:
+       if not isinstance(command, str) or not command.strip():
+           return
+
+       entry = {
+           "timestamp": self._timestamp(),
+           "command": command.strip(),
+           "capabilities": capabilities,
+           "execution_time": float(execution_time),
+           "success": bool(success),
+       }
+
+       self._payload.setdefault("command_history", [])
+       self._payload["command_history"].append(entry)
+       self._payload["command_history"] = self._payload["command_history"][-100:]
+       self._mark_dirty()
+       if auto_flush:
+           self._write_payload()
 
     def _update_statistics(self) -> None:
         stats = self._payload.setdefault("statistics", self._default_statistics())
@@ -795,10 +825,41 @@ class MemoryEngine:
         stats.setdefault("last_active", None)
 
     def get_recent_context(self, limit: int = 5) -> list[HistoryEntry]:
-        """Return the most recent conversation history entries."""
-        history = self._payload.get("history", [])
-        entries = history[-limit:]
-        return [HistoryEntry(**entry) for entry in entries]
+       """Return the most recent conversation history entries."""
+       history = self._payload.get("history", [])
+       entries = history[-limit:]
+       return [HistoryEntry(**entry) for entry in entries]
+
+    def get_relevant_context(self, query: str, limit: int = 3) -> list[HistoryEntry]:
+       """Return the most recent context entries most relevant to a query."""
+       if not isinstance(query, str) or not query.strip():
+           return self.get_recent_context(limit)
+
+       keywords = set(re.findall(r"\w+", query.lower()))
+       if not keywords:
+           return self.get_recent_context(limit)
+
+       history = self._payload.get("history", [])
+       matched: list[HistoryEntry] = []
+       seen: set[str] = set()
+
+       for entry in reversed(history):
+           text = f"{entry.get('user', '')} {entry.get('assistant', '')}".strip().lower()
+           if not text:
+               continue
+           if any(keyword in text for keyword in keywords):
+               normalized = re.sub(r"\s+", " ", text)
+               if normalized in seen:
+                   continue
+               seen.add(normalized)
+               matched.append(HistoryEntry(**entry))
+               if len(matched) >= limit:
+                   break
+
+       if matched:
+           return list(reversed(matched))
+
+       return self.get_recent_context(limit)
 
     def summary(self) -> MemorySummary:
         """Return a summary of stored conversations and facts."""

@@ -1,8 +1,10 @@
 import json
+import html
+import re
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from typing import List, Optional, Protocol
+from typing import Any, Dict, List, Optional, Protocol
 from urllib.error import HTTPError, URLError
 
 from llm.engine import LLMEngine
@@ -14,6 +16,7 @@ class SearchResult:
 
     success: bool
     summary: Optional[str] = None
+    results: Optional[List[Dict[str, Any]]] = None
     error: Optional[str] = None
 
 
@@ -25,7 +28,7 @@ class SearchProvider(Protocol):
         ...
 
 
-class DuckDuckGoProvider:
+class DuckDuckGoInstantAnswerProvider:
     """DuckDuckGo provider using the Instant Answer JSON API."""
 
     API_URL = "https://api.duckduckgo.com/"
@@ -38,16 +41,10 @@ class DuckDuckGoProvider:
         url = self._build_url(query)
 
         try:
-            request = urllib.request.Request(
-                url,
-                headers={"User-Agent": self.USER_AGENT},
-            )
+            request = urllib.request.Request(url, headers={"User-Agent": self.USER_AGENT})
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 if response.status != 200:
-                    return SearchResult(
-                        False,
-                        error=f"Search provider returned status {response.status}.",
-                    )
+                    return SearchResult(False, error=f"Search provider returned status {response.status}.")
 
                 payload = response.read()
                 data = json.loads(payload.decode("utf-8", errors="ignore"))
@@ -127,69 +124,216 @@ class DuckDuckGoProvider:
         return " ".join(text.split())
 
 
+# Kept as an alias for callers using the original public provider name.
+DuckDuckGoProvider = DuckDuckGoInstantAnswerProvider
+
+
+class DuckDuckGoHtmlProvider:
+    """DuckDuckGo provider scraping HTML results for structured search data."""
+
+    API_URL = "https://html.duckduckgo.com/html/"
+    USER_AGENT = "EchoDesk InternetEngine/1.0"
+
+    def search(self, query: str, timeout: float) -> SearchResult:
+        if not isinstance(query, str) or not query.strip():
+            return SearchResult(False, error="The search query was empty.")
+
+        url = f"{self.API_URL}?{urllib.parse.urlencode({'q': query})}"
+
+        try:
+            request = urllib.request.Request(url, headers={"User-Agent": self.USER_AGENT})
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                if response.status != 200:
+                    return SearchResult(False, error=f"Search provider returned status {response.status}.")
+                html = response.read().decode("utf-8", errors="ignore")
+        except HTTPError:
+            return SearchResult(False, error="The search provider could not complete the request.")
+        except URLError:
+            return SearchResult(False, error="I could not reach the internet. Please check your connection.")
+        except Exception:
+            return SearchResult(False, error="The search provider failed unexpectedly.")
+
+        results = self._parse_results(html)
+        if not results:
+            return SearchResult(False, error="No search results were returned by the provider.")
+
+        summary = self._summarize_results(results)
+        return SearchResult(True, summary=summary, results=results)
+
+    def _parse_results(self, html: str) -> List[Dict[str, Any]]:
+        titles = re.findall(
+            r'<a[^>]*class=["\"][^"\"]*result__a[^"\"]*["\"][^>]*href=["\"]([^"\"]+)["\"][^>]*>(.*?)</a>',
+            html,
+            flags=re.S | re.I,
+        )
+        snippets = re.findall(
+            r'<a[^>]*class=["\"][^"\"]*result__snippet[^"\"]*["\"][^>]*>(.*?)</a>',
+            html,
+            flags=re.S | re.I,
+        )
+
+        results: List[Dict[str, Any]] = []
+        for index, (url, title_html) in enumerate(titles[:10]):
+            title = self._clean_html(title_html)
+            snippet = self._clean_html(snippets[index]) if index < len(snippets) else None
+            if title and url:
+                results.append(
+                    {
+                        "title": title,
+                        "url": url,
+                        "snippet": snippet,
+                        "content": None,
+                    }
+                )
+            if len(results) >= 5:
+                break
+
+        return results
+
+    def _summarize_results(self, results: List[Dict[str, Any]]) -> str:
+        if not results:
+            return ""
+
+        lines = []
+        for result in results[:3]:
+            title = result.get("title") or "No title"
+            snippet = result.get("snippet") or "No snippet available."
+            lines.append(f"{title}: {snippet}")
+
+        return " \n".join(lines)
+
+    def _clean_html(self, html: str) -> str:
+        text = re.sub(r"<[^>]+>", "", html)
+        text = html_module_unescape(text)
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
+
+
 class InternetEngine:
     """A reusable internet search engine with provider abstraction."""
 
     FALLBACK_MESSAGE = (
-       "I couldn't find a clear answer from the internet right now. "
-       "Please try again later or ask something else."
+        "I couldn't find a clear answer from the internet right now. "
+        "Please try again later or ask something else."
     )
 
     def __init__(
-       self,
-       providers: Optional[List[SearchProvider]] = None,
-       timeout: float = 5.0,
-       llm_engine: Optional[LLMEngine] = None,
+        self,
+        providers: Optional[List[SearchProvider]] = None,
+        timeout: float = 5.0,
+        llm_engine: Optional[LLMEngine] = None,
     ) -> None:
-       self.timeout = float(timeout)
-       self.providers = providers if providers is not None else [DuckDuckGoProvider()]
-       self.llm_engine = llm_engine
+        self.timeout = float(timeout)
+        self.providers = providers if providers is not None else [DuckDuckGoHtmlProvider(), DuckDuckGoInstantAnswerProvider()]
+        self.llm_engine = llm_engine
 
-    def search(self, query: str) -> str:
+    def search_structured(self, query: str) -> dict[str, Any]:
         if not isinstance(query, str) or not query.strip():
-            return self.FALLBACK_MESSAGE
+            return {
+                "status": "failed",
+                "query": query,
+                "error": "The search query was empty.",
+            }
 
-        last_error: Optional[str] = None
+        errors: List[str] = []
         for provider in self.providers:
             try:
                 result = provider.search(query, self.timeout)
             except Exception:
-                last_error = "A search provider failed unexpectedly."
+                errors.append("A search provider failed unexpectedly.")
                 continue
 
-            if result.success and result.summary:
-                return self._summarize_with_llm(result.summary)
+            if result.success:
+                output: dict[str, Any] = {
+                    "status": "success",
+                    "query": query,
+                    "summary": result.summary or "",
+                    "results": result.results or [],
+                }
+                if self.llm_engine:
+                    if output["results"]:
+                        output["summary"] = self._summarize_results_with_llm(output["results"], query)
+                    elif output["summary"]:
+                        output["summary"] = self._summarize_text_with_llm(output["summary"])
+                return output
 
-            last_error = result.error or last_error
+            errors.append(result.error or "The search provider did not return a usable result.")
 
-        if last_error:
-            return f"{self.FALLBACK_MESSAGE} {last_error}"
+        return {
+            "status": "failed",
+            "query": query,
+            "error": " ".join(errors).strip() or "No internet results were available.",
+        }
 
+    def search(self, query: str) -> str:
+        structured = self.search_structured(query)
+        if structured.get("status") == "success":
+            summary = structured.get("summary")
+            if isinstance(summary, str) and summary.strip():
+                return summary
+            results = structured.get("results") or []
+            if results:
+                return self._format_results_summary(results)
+
+        error = structured.get("error")
+        if error:
+            return f"{self.FALLBACK_MESSAGE} {error}"
         return self.FALLBACK_MESSAGE
 
-    def _summarize_with_llm(self, text: str) -> str:
+    def _summarize_results_with_llm(self, results: List[Dict[str, Any]], query: str) -> str:
+        if self.llm_engine is None:
+            return self._format_results_summary(results)
+
+        text = self._format_results_for_llm(results, query)
+        try:
+            summary = self.llm_engine.summarize(text)
+            if isinstance(summary, str) and summary.strip() and not self._looks_like_llm_error(summary):
+                return summary.strip()
+        except Exception:
+            pass
+        return self._format_results_summary(results)
+
+    def _summarize_text_with_llm(self, text: str) -> str:
+        """Summarize provider text while retaining a useful response on LLM failure."""
         if self.llm_engine is None:
             return text
-
-        # Prevent sending oversized internet content to the LLM
-        max_chars = 2000
-        safe_text = text if len(text) <= max_chars else text[:max_chars]
         try:
-            summary = self.llm_engine.summarize(safe_text)
-            if not isinstance(summary, str) or not summary.strip():
-                return text
-
-            if self._looks_like_llm_error(summary):
-                return text
-
-            return summary
+            summary = self.llm_engine.summarize(text[:2000])
+            if isinstance(summary, str) and summary.strip() and not self._looks_like_llm_error(summary):
+                return summary.strip()
         except Exception:
-            return text
+            pass
+        return text
+
+    def _format_results_for_llm(self, results: List[Dict[str, Any]], query: str) -> str:
+        lines = [f"Query: {query}"]
+        for result in results[:3]:
+            lines.append(f"Title: {result.get('title')}")
+            lines.append(f"URL: {result.get('url')}")
+            if result.get("snippet"):
+                lines.append(f"Snippet: {result.get('snippet')}")
+        return "\n".join(lines)
+
+    def _format_results_summary(self, results: List[Dict[str, Any]]) -> str:
+        if not results:
+            return "I could not summarize the search results."
+
+        lines = []
+        for result in results[:3]:
+            title = result.get("title") or "Unknown title"
+            snippet = result.get("snippet") or "No snippet available."
+            lines.append(f"{title}: {snippet}")
+        return "\n".join(lines)
 
     def _looks_like_llm_error(self, response: str) -> bool:
         lowered = response.lower()
         return (
             response.startswith("OllamaProvider")
-            or "ollama" in lowered and "error" in lowered
-            or "could not" in lowered and "ollama" in lowered
+            or ("ollama" in lowered and "error" in lowered)
+            or ("could not" in lowered and "ollama" in lowered)
         )
+
+
+def html_module_unescape(value: str) -> str:
+    """Decode search-result entities without exposing parser internals."""
+    return html.unescape(value)

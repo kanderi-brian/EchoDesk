@@ -1,9 +1,5 @@
-"""Knowledge engine module for EchoDesk."""
+"""Knowledge engine compatibility module for EchoDesk."""
 
+from .knowledge import KnowledgeEngine
 
-class KnowledgeEngine:
-    """A lightweight knowledge retrieval engine."""
-
-    def lookup(self, query: str) -> str:
-        """Return a placeholder response for a knowledge query."""
-        return """Knowledge lookup is not implemented yet.""" 
+__all__ = ["KnowledgeEngine"]

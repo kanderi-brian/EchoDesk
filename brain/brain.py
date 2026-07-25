@@ -17,6 +17,7 @@ from runtime.agent_runtime import AgentRuntime
 from reflection.reflection_engine import ReflectionEngine
 from history.history_engine import HistoryEngine
 from scheduler.scheduler import Scheduler
+from agent.project_agent import ProjectAgent
 
 # configuration and logging
 from core.config import get_config
@@ -69,6 +70,12 @@ class EchoBrain:
             voice_engine=None,
             llm_engine=self.llm_engine if getattr(self, 'llm_engine', None) is not None else None,
             plugin_manager=None,
+            record_learning=False,
+        )
+        self.project_agent = ProjectAgent(
+            planner=self.planner,
+            executor=self.executor,
+            memory_engine=self.memory_engine,
         )
 
         # Lazy-loaded vision modules
@@ -135,6 +142,24 @@ class EchoBrain:
         if getattr(self, "agent_runtime", None) is None:
             return
         self.agent_runtime.stop()
+
+    def get_progress(self, goal_id: str | None = None) -> dict[str, Any]:
+        """Return autonomous project-goal progress without changing legacy goal APIs."""
+        report = self.project_agent.get_progress(goal_id)
+        return {
+            "current_goal": report.goal_id,
+            "completed_tasks": report.completed_tasks,
+            "remaining_tasks": report.remaining_tasks,
+            "failed_tasks": report.failed_tasks,
+            "retries": report.retries,
+            "estimated_completion": report.estimated_completion,
+            "execution_state": report.state.value if report.state else None,
+            "current_step": report.current_step,
+        }
+
+    def submit_project_goal(self, objective: str, priority: int = 50, background: bool = True):
+        """Queue a ProjectAgent goal while retaining existing GoalManager behavior."""
+        return self.project_agent.add_goal(objective, priority=priority, start=background)
 
     def pause_runtime(self) -> None:
         if getattr(self, "agent_runtime", None) is None:
@@ -490,7 +515,9 @@ class EchoBrain:
         except Exception:
             pass
 
-        self.memory_engine.add_interaction(f"Goal: {goal.title}", execution_result.final_response)
+        self.memory_engine.add_interaction(
+            f"Goal: {goal.title}", execution_result.final_response, auto_flush=False
+        )
         self.memory_engine.learn(
             command=goal.description or goal.title,
             capability="Goal",
@@ -691,7 +718,7 @@ class EchoBrain:
                 pass
 
         self.memory.remember(command, final_response)
-        self.memory_engine.add_interaction(command, final_response)
+        self.memory_engine.add_interaction(command, final_response, auto_flush=False)
         self.memory_engine.learn(
             command,
             capability=(result.engines_used[0] if result else engines_used[0] if engines_used else None),

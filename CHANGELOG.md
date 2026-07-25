@@ -1,5 +1,24 @@
 # Changelog
 
+## [3.2.0] - 2026-07-25
+
+### Added
+
+- Phase 16 semantic desktop vision: UI models, scene graph, smart control search, relative positioning, scene comparison, and recovery.
+- Visual UI actions for desktop automation and optional ProjectAgent scene preparation.
+- Application profiles for Explorer, VS Code, Chrome, Edge, Settings, Notepad, and Calculator; cached scenes and `logs/vision.log` diagnostics.
+
+## [3.1.0] - 2026-07-25
+
+### Added
+
+- Phase 15 autonomous `ProjectAgent` orchestration layer.
+- Goal queueing, dependencies, background workers, pause/resume/cancel, and progress reports.
+- Task-level verification for files, processes, exit codes, OCR, internet output, expected output, and LLM evaluation.
+- Bounded automatic recovery with retry history and memory learning.
+- Human approval gate for sensitive operations.
+- Structured planner metadata for execution order, dependencies, verification, and retry strategy.
+
 ## [3.0.0] - 2026-07-24
 
 ### Added

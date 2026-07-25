@@ -27,9 +27,9 @@ class TestTaskExecutorLLMContextLimiting(unittest.TestCase):
         exec = TaskExecutor(memory_engine=mem, llm_engine=llm)
         # call _execute_llm directly
         out = exec._execute_llm("do something")
-        # provider.generate was called once with prompt containing at most 5 entries
+        # provider.generate was called once with only the compact recent context.
         sent_prompt = provider.generate.call_args[0][0]
-        self.assertTrue(sent_prompt.count("User:") <= 5)
+        self.assertTrue(sent_prompt.count("U:") <= 3)
 
 
 if __name__ == '__main__':

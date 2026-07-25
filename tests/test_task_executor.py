@@ -39,7 +39,7 @@ class TestTaskExecutor(unittest.TestCase):
             Task(id="t2", description="Summarize search results.", capability="LLM"),
         ]
 
-        executor = TaskExecutor()
+        executor = DummyExecutor()
         result = executor.execute_plan(plan, plan.goal)
 
         self.assertEqual(result.status, "SUCCESS")

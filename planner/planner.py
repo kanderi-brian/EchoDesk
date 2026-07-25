@@ -48,6 +48,8 @@ class PlanStep:
     dependencies: list[str] = field(default_factory=list)
     duration: float | None = None
     result: str | None = None
+    verification_method: str = "expected_output"
+    retry_strategy: str = "retry"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -63,6 +65,8 @@ class PlanStep:
             "dependencies": list(self.dependencies),
             "duration": self.duration,
             "result": self.result,
+            "verification_method": self.verification_method,
+            "retry_strategy": self.retry_strategy,
         }
 
 
@@ -78,6 +82,7 @@ class ExecutionPlan:
     reasoning: str = ""
     required_tools: List[str] = field(default_factory=list)
     expected_result: str = ""
+    execution_order: List[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.original_request = self.goal
@@ -110,6 +115,7 @@ class ExecutionPlan:
             "reasoning": self.reasoning,
             "required_tools": list(self.required_tools),
             "expected_result": self.expected_result,
+            "execution_order": list(self.execution_order),
         }
 
 
@@ -282,9 +288,13 @@ class PlannerEngine:
         expected_result = self._infer_expected_result(command, steps)
         requires_confirmation = any(step.optional for step in steps) or complexity != "easy"
 
-        for step in steps:
+        for index, step in enumerate(steps):
             if not step.engine or step.engine == "unknown":
                 step.engine = capabilities[0] if capabilities else "LLM"
+            if not step.dependencies and index:
+                step.dependencies = [steps[index - 1].id]
+            if step.engine.lower().startswith("internet"):
+                step.verification_method = "internet_response"
 
         tasks = self._build_tasks(steps, capabilities)
         plan = ExecutionPlan(
@@ -297,6 +307,7 @@ class PlannerEngine:
             reasoning=reasoning,
             required_tools=tools,
             expected_result=expected_result,
+            execution_order=[step.id for step in steps],
         )
         return plan
 

@@ -22,10 +22,15 @@ def main() -> None:
         print(query)
         print()
 
-        response = brain.process(query)
-        plan = response.get("plan")
-        result = response.get("details")
-        final_response = response.get("final_response")
+        response = brain.process(query, return_structured=True)
+        if isinstance(response, dict):
+            plan = response.get("plan")
+            result = response.get("details")
+            final_response = response.get("final_response")
+        else:
+            plan = None
+            result = None
+            final_response = str(response)
 
         print("Plan:")
         if plan is not None:

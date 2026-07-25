@@ -1,5 +1,6 @@
 """Task execution engine for EchoDesk."""
 
+import concurrent.futures
 import time
 import uuid
 import logging
@@ -52,6 +53,8 @@ class TaskExecutor:
         llm_engine: Any | None = None,
         plugin_manager: object | None = None,
         retry_limit: int = 2,
+        task_timeout: float = 30.0,
+        record_learning: bool = True,
     ) -> None:
         self.logger = logging.getLogger("echodesk.executor")
         self.memory_engine = memory_engine or MemoryEngine()
@@ -64,6 +67,8 @@ class TaskExecutor:
         # Plugin manager may be injected by EchoBrain; keep optional for backward compatibility
         self.plugin_manager = plugin_manager
         self.retry_limit = max(0, int(retry_limit))
+        self.task_timeout = float(task_timeout)
+        self.record_learning = bool(record_learning)
 
     def execute_plan(self, plan: ExecutionPlan, command: str) -> ExecutionResult:
         """Execute the provided plan by running tasks sequentially."""
@@ -122,14 +127,15 @@ class TaskExecutor:
             return "Memory engine failed to process the command." 
 
     def _execute_task(self, task: Task, command: str) -> dict[str, Any]:
-        capability = task.capability
+        capability = str(task.capability or "").strip()
+        capability_key = capability.casefold()
         engine_name = capability.title()
         self.logger.debug("[Task] %s -> %s", task.description, engine_name)
 
         # If this task explicitly requests a Plugin capability, run the plugin and return.
         try:
             pm = getattr(self, "plugin_manager", None)
-            if capability == "Plugin":
+            if capability_key == "plugin":
                 if pm is None:
                     return {"success": False, "message": "No plugin manager available."}
                 try:
@@ -171,19 +177,18 @@ class TaskExecutor:
                     self.logger.debug("Plugin registry check failed, continuing to builtin engines")
                     pass
 
-            if capability == "Memory":
-                return {"success": True, "message": self._execute_memory(command)}
-            if capability == "Knowledge":
-                return {"success": True, "message": self._execute_knowledge(command)}
-            if capability == "Internet":
-                return {"success": True, "message": self._execute_internet(command)}
-            if capability == "Vision":
-                return {"success": True, "message": self._execute_vision(command)}
-            if capability == "Voice":
-                return {"success": True, "message": self._execute_voice(command)}
-            if capability == "LLM":
-                return {"success": True, "message": self._execute_llm(command)}
-            return {"success": False, "message": f"Capability {capability} is not supported yet."}
+            handlers = {
+                "memory": self._execute_memory,
+                "knowledge": self._execute_knowledge,
+                "internet": self._execute_internet,
+                "vision": self._execute_vision,
+                "voice": self._execute_voice,
+                "llm": self._execute_llm,
+            }
+            handler = handlers.get(capability_key)
+            if handler is None:
+                return {"success": False, "message": f"Capability {capability or 'unknown'} is not supported."}
+            return {"success": True, "message": handler(command)}
         except Exception as exc:
             self.logger.exception("Unexpected error during task execution")
             return {"success": False, "message": str(exc)}
@@ -193,9 +198,11 @@ class TaskExecutor:
         last_result: dict[str, Any] = {"success": False, "message": "Task was not executed."}
 
         while attempt <= self.retry_limit:
-            result = self._execute_task(task, command)
+            result = self._execute_task_with_timeout(task, command)
             attempt += 1
             task.retry_count = attempt
+            if not isinstance(result, dict):
+                result = {"success": False, "message": "Task execution returned an invalid result."}
             if result.get("success"):
                 return result
 
@@ -203,9 +210,27 @@ class TaskExecutor:
             if attempt > self.retry_limit:
                 break
 
-            print(f"[Retry] Reattempting task ({attempt}/{self.retry_limit})")
+            self.logger.info("Retrying task %s (%d/%d)", task.capability, attempt, self.retry_limit)
 
         return last_result
+
+    def _execute_task_with_timeout(self, task: Task, command: str) -> dict[str, Any]:
+        if self.task_timeout <= 0:
+            return self._execute_task(task, command)
+
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(self._execute_task, task, command)
+        try:
+            return future.result(timeout=self.task_timeout)
+        except concurrent.futures.TimeoutError:
+            self.logger.warning("Task %s timed out after %.1fs", task.capability, self.task_timeout)
+            future.cancel()
+            return {"success": False, "message": f"Task '{task.capability}' timed out after {self.task_timeout:.1f} seconds."}
+        finally:
+            # Do not turn a timed-out operation into a blocking wait while
+            # leaving the executor context manager. Running work cannot be
+            # force-cancelled safely, but it no longer blocks this request.
+            executor.shutdown(wait=False, cancel_futures=True)
 
     def _tasks_from_capabilities(self, capabilities: list[str]) -> list[Task]:
         tasks = []
@@ -342,12 +367,11 @@ class TaskExecutor:
 
             self._llm_engine = LLMEngine()
         try:
-            print("[LLM] Preparing context...")
-            self.logger.debug("Collecting memory context for LLM (limit=5)")
-            context_entries = self.memory_engine.get_recent_context(limit=5)
+            self.logger.debug("Collecting compact memory context for LLM")
+            context_entries = self.memory_engine.get_recent_context(limit=3)
             # Ensure at most 5 entries are used even if underlying memory engine returned more
             if isinstance(context_entries, list):
-                context_entries = context_entries[:5]
+                context_entries = context_entries[-3:]
 
             context_text = []
             if context_entries:
@@ -355,13 +379,13 @@ class TaskExecutor:
                     # Use a compact representation and keep recent entries
                     user = getattr(entry, "user", "")
                     assistant = getattr(entry, "assistant", "")
-                    context_text.append(f"User: {user}\nAssistant: {assistant}")
+                    context_text.append(f"U: {str(user)[:500]}\nA: {str(assistant)[:500]}")
 
             full_context = "\n---\n".join(context_text) if context_text else None
 
-            # enforce overall approximate context size limit (~4000 chars)
+            # Keep prompts compact: the newest context is most useful and reduces latency.
             if full_context:
-                max_total = 4000
+                max_total = 1800
                 prompt_len = len(command or "")
                 # If too long, drop oldest entries until within limits
                 while len(full_context) + prompt_len > max_total and "---" in full_context:
@@ -371,14 +395,11 @@ class TaskExecutor:
                     parts.pop(0)
                     full_context = "\n---\n".join(parts)
 
-            # Now call the LLM provider with clear progress messages and timing
-            print("[LLM] Sending request...")
-            self.logger.debug("LLM prompt size (approx): %d", len(full_context or "") + len(command or ""))
-            print("[LLM] Waiting for response...")
+            total_context_len = len(full_context or "")
+            self.logger.debug("LLM prompt size (approx): %d", total_context_len + len(command or ""))
             t0 = time.perf_counter()
             result = self._llm_engine.ask(command, context=full_context)
             t1 = time.perf_counter()
-            print("[LLM] Response received.")
             self.logger.info("LLM response time: %.3fs", (t1 - t0))
             self.logger.debug("LLM context length: %d, prompt length: %d", len(full_context or ""), len(command or ""))
 
@@ -390,7 +411,7 @@ class TaskExecutor:
             return "LLM engine failed."
 
     def _record_learning(self, command: str, capability: str, response: str, success: bool, duration: float | None) -> None:
-        if self.memory_engine is None:
+        if not self.record_learning or self.memory_engine is None:
             return
 
         try:

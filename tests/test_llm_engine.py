@@ -22,7 +22,7 @@ class TestLLMEngineModule(unittest.TestCase):
 
         self.assertIsInstance(engine.provider, OllamaProvider)
         self.assertEqual(engine.provider.model, "phi3:latest")
-        self.assertEqual(engine.provider.timeout, 300)
+        self.assertEqual(engine.provider.timeout, 60)
 
 
 class TestOllamaProviderModule(unittest.TestCase):

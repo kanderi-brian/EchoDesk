@@ -2,6 +2,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import Mock
 
 from memory_engine.memory_engine import MemoryEngine, UserPreference
 
@@ -70,6 +71,13 @@ class TestLearningEngine(unittest.TestCase):
         self.assertEqual(stats["failed_executions"], 0)
         self.assertEqual(stats["command_history_size"], 2)
         self.assertGreater(stats["average_command_length"], 0)
+
+    def test_learning_with_inferred_preference_flushes_once(self):
+        self.engine._write_payload = Mock(wraps=self.engine._write_payload)
+
+        self.engine.learn("use chrome to browse", capability="Internet")
+
+        self.assertEqual(self.engine._write_payload.call_count, 1)
 
     def test_command_history_limits_to_latest_100(self):
         for i in range(105):
