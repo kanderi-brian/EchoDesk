@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.0] - 2026-07-25
+
+### Added
+
+- Phase 22 EchoDesk Studio: a dockable PySide6 workspace with chat, Voice and Vision centres, project/agent/memory/learning/plugin/security/performance dashboards, notification panel, settings, and session restore.
+- Studio UI regression coverage and configuration persistence helper.
+
 ## [3.7.0] - 2026-07-25
 
 ### Added

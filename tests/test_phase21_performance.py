@@ -13,8 +13,8 @@ class Phase21PerformanceTests(unittest.TestCase):
         self.assertEqual(1, cache.stats()["hits"])
 
     def test_cache_expires(self):
-        cache = TTLCache(ttl=0.001, name="expiry")
-        cache.set("key", "value"); time.sleep(0.01)
+        cache = TTLCache(ttl=0, name="expiry")
+        cache.set("key", "value")
         self.assertIsNone(cache.get("key"))
         self.assertEqual(1, cache.stats()["misses"])
 

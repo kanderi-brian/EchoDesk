@@ -98,6 +98,21 @@ For comparable release measurements, use `BenchmarkRunner.run(name, workload,
 iterations=3)` with a deterministic workload. Benchmarks intentionally do not
 perform desktop actions themselves.
 
+## EchoDesk Studio
+
+EchoDesk Studio is the optional PySide6 desktop control centre. It adds a
+dockable navigation shell, AI chat workspace with file drop support, Voice and
+Vision centres, and dashboards for projects, agents, memory, learning,
+plugins, security, and performance. The Studio delegates to existing
+`EchoBrain` APIs, so it does not change automation, security, or runtime
+behaviour.
+
+Run it with `from ui.studio import run_studio; run_studio()`. The interface
+supports keyboard focus, accessible control names, scalable dock layouts, and
+high-contrast system themes. It saves the most recently opened Studio page in
+`studio_session.json`; settings use the existing configuration file through
+the Settings page. Sessions never contain secrets.
+
 ## Security and Safety
 
 Phase 20 adds a centralized `SecurityEngine` used by EchoBrain, agents,

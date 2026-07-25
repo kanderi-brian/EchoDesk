@@ -2763,5 +2763,365 @@
       "confidence": 0.9,
       "summary": "Execution succeeded for 'Learn the new feature'. 0 failed tasks. Confidence 0.90."
     }
+  },
+  {
+    "timestamp": "2026-07-25T15:32:02.872991Z",
+    "event_type": "goal_execution_started",
+    "payload": {
+      "goal_id": "87731400-eaa6-4a35-be0b-a72c74990d45",
+      "title": "Finish project",
+      "status": "Running",
+      "details": "Running goal 'Finish project'."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:32:02.957281Z",
+    "event_type": "goal_execution_completed",
+    "payload": {
+      "goal_id": "87731400-eaa6-4a35-be0b-a72c74990d45",
+      "title": "Finish project",
+      "status": "Completed",
+      "details": "Goal completed successfully."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:32:02.993990Z",
+    "event_type": "plan_completed",
+    "payload": {
+      "goal_id": "87731400-eaa6-4a35-be0b-a72c74990d45",
+      "status": "SUCCESS",
+      "result": "[LLM] Task completed",
+      "tasks": []
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:32:03.039264Z",
+    "event_type": "reflection",
+    "payload": {
+      "timestamp": "2026-07-25T15:32:03.028644Z",
+      "command": "Finish project",
+      "success": true,
+      "failed_tasks": [],
+      "failure_reasons": [],
+      "retry_recommended": false,
+      "replan_recommended": false,
+      "confidence": 0.9,
+      "summary": "Execution succeeded for 'Finish project'. 0 failed tasks. Confidence 0.90."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:32:04.290118Z",
+    "event_type": "goal_execution_started",
+    "payload": {
+      "goal_id": "8da84e9c-1dc8-4571-9ecf-6d843a00e1f5",
+      "title": "Finish task",
+      "status": "Running",
+      "details": "Running goal 'Finish task'."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:32:04.358571Z",
+    "event_type": "goal_execution_completed",
+    "payload": {
+      "goal_id": "8da84e9c-1dc8-4571-9ecf-6d843a00e1f5",
+      "title": "Finish task",
+      "status": "Completed",
+      "details": "Goal completed successfully."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:32:04.396222Z",
+    "event_type": "plan_completed",
+    "payload": {
+      "goal_id": "8da84e9c-1dc8-4571-9ecf-6d843a00e1f5",
+      "status": "SUCCESS",
+      "result": "[LLM] Task completed",
+      "tasks": []
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:32:04.457162Z",
+    "event_type": "reflection",
+    "payload": {
+      "timestamp": "2026-07-25T15:32:04.431713Z",
+      "command": "Finish task",
+      "success": true,
+      "failed_tasks": [],
+      "failure_reasons": [],
+      "retry_recommended": false,
+      "replan_recommended": false,
+      "confidence": 0.9,
+      "summary": "Execution succeeded for 'Finish task'. 0 failed tasks. Confidence 0.90."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:32:59.793209Z",
+    "event_type": "goal_execution_started",
+    "payload": {
+      "goal_id": "c05f0151-6c38-4cc5-9c92-08ae659ae3f5",
+      "title": "Learn the new feature",
+      "status": "Running",
+      "details": "Running goal 'Learn the new feature'."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:32:59.881179Z",
+    "event_type": "goal_execution_completed",
+    "payload": {
+      "goal_id": "c05f0151-6c38-4cc5-9c92-08ae659ae3f5",
+      "title": "Learn the new feature",
+      "status": "Completed",
+      "details": "Goal completed successfully."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:32:59.926262Z",
+    "event_type": "plan_completed",
+    "payload": {
+      "goal_id": "c05f0151-6c38-4cc5-9c92-08ae659ae3f5",
+      "status": "SUCCESS",
+      "result": "[LLM] Task completed",
+      "tasks": []
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:32:59.993162Z",
+    "event_type": "reflection",
+    "payload": {
+      "timestamp": "2026-07-25T15:32:59.969808Z",
+      "command": "Learn the new feature",
+      "success": true,
+      "failed_tasks": [],
+      "failure_reasons": [],
+      "retry_recommended": false,
+      "replan_recommended": false,
+      "confidence": 0.9,
+      "summary": "Execution succeeded for 'Learn the new feature'. 0 failed tasks. Confidence 0.90."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:33:01.261854Z",
+    "event_type": "goal_execution_started",
+    "payload": {
+      "goal_id": "d0a769d8-8f70-442e-a292-0e739aab9f4d",
+      "title": "Finish project",
+      "status": "Running",
+      "details": "Running goal 'Finish project'."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:33:01.313837Z",
+    "event_type": "goal_execution_completed",
+    "payload": {
+      "goal_id": "d0a769d8-8f70-442e-a292-0e739aab9f4d",
+      "title": "Finish project",
+      "status": "Completed",
+      "details": "Goal completed successfully."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:33:01.329642Z",
+    "event_type": "plan_completed",
+    "payload": {
+      "goal_id": "d0a769d8-8f70-442e-a292-0e739aab9f4d",
+      "status": "SUCCESS",
+      "result": "[LLM] Task completed",
+      "tasks": []
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:33:01.361114Z",
+    "event_type": "reflection",
+    "payload": {
+      "timestamp": "2026-07-25T15:33:01.350842Z",
+      "command": "Finish project",
+      "success": true,
+      "failed_tasks": [],
+      "failure_reasons": [],
+      "retry_recommended": false,
+      "replan_recommended": false,
+      "confidence": 0.9,
+      "summary": "Execution succeeded for 'Finish project'. 0 failed tasks. Confidence 0.90."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:33:28.791618Z",
+    "event_type": "goal_execution_started",
+    "payload": {
+      "goal_id": "13820914-2107-4d97-8c95-99ac426baeeb",
+      "title": "Finish task",
+      "status": "Running",
+      "details": "Running goal 'Finish task'."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:33:28.897154Z",
+    "event_type": "goal_execution_completed",
+    "payload": {
+      "goal_id": "13820914-2107-4d97-8c95-99ac426baeeb",
+      "title": "Finish task",
+      "status": "Completed",
+      "details": "Goal completed successfully."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:33:28.937719Z",
+    "event_type": "plan_completed",
+    "payload": {
+      "goal_id": "13820914-2107-4d97-8c95-99ac426baeeb",
+      "status": "SUCCESS",
+      "result": "[LLM] Task completed",
+      "tasks": []
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:33:29.027751Z",
+    "event_type": "reflection",
+    "payload": {
+      "timestamp": "2026-07-25T15:33:28.990134Z",
+      "command": "Finish task",
+      "success": true,
+      "failed_tasks": [],
+      "failure_reasons": [],
+      "retry_recommended": false,
+      "replan_recommended": false,
+      "confidence": 0.9,
+      "summary": "Execution succeeded for 'Finish task'. 0 failed tasks. Confidence 0.90."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:33:30.188447Z",
+    "event_type": "goal_execution_started",
+    "payload": {
+      "goal_id": "a987f671-5565-475a-8f39-9005ffdd2f7c",
+      "title": "Learn the new feature",
+      "status": "Running",
+      "details": "Running goal 'Learn the new feature'."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:33:30.232497Z",
+    "event_type": "goal_execution_completed",
+    "payload": {
+      "goal_id": "a987f671-5565-475a-8f39-9005ffdd2f7c",
+      "title": "Learn the new feature",
+      "status": "Completed",
+      "details": "Goal completed successfully."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:33:30.249955Z",
+    "event_type": "plan_completed",
+    "payload": {
+      "goal_id": "a987f671-5565-475a-8f39-9005ffdd2f7c",
+      "status": "SUCCESS",
+      "result": "[LLM] Task completed",
+      "tasks": []
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:33:30.281587Z",
+    "event_type": "reflection",
+    "payload": {
+      "timestamp": "2026-07-25T15:33:30.266201Z",
+      "command": "Learn the new feature",
+      "success": true,
+      "failed_tasks": [],
+      "failure_reasons": [],
+      "retry_recommended": false,
+      "replan_recommended": false,
+      "confidence": 0.9,
+      "summary": "Execution succeeded for 'Learn the new feature'. 0 failed tasks. Confidence 0.90."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:34:14.629426Z",
+    "event_type": "goal_execution_started",
+    "payload": {
+      "goal_id": "2d885b87-05ae-4ea5-8c49-597f754d2ffd",
+      "title": "Finish project",
+      "status": "Running",
+      "details": "Running goal 'Finish project'."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:34:14.745645Z",
+    "event_type": "goal_execution_completed",
+    "payload": {
+      "goal_id": "2d885b87-05ae-4ea5-8c49-597f754d2ffd",
+      "title": "Finish project",
+      "status": "Completed",
+      "details": "Goal completed successfully."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:34:14.777410Z",
+    "event_type": "plan_completed",
+    "payload": {
+      "goal_id": "2d885b87-05ae-4ea5-8c49-597f754d2ffd",
+      "status": "SUCCESS",
+      "result": "[LLM] Task completed",
+      "tasks": []
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:34:14.850716Z",
+    "event_type": "reflection",
+    "payload": {
+      "timestamp": "2026-07-25T15:34:14.821772Z",
+      "command": "Finish project",
+      "success": true,
+      "failed_tasks": [],
+      "failure_reasons": [],
+      "retry_recommended": false,
+      "replan_recommended": false,
+      "confidence": 0.9,
+      "summary": "Execution succeeded for 'Finish project'. 0 failed tasks. Confidence 0.90."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:34:15.865444Z",
+    "event_type": "goal_execution_started",
+    "payload": {
+      "goal_id": "4a71b110-c29f-4f43-84b5-8400700601e0",
+      "title": "Finish task",
+      "status": "Running",
+      "details": "Running goal 'Finish task'."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:34:15.932019Z",
+    "event_type": "goal_execution_completed",
+    "payload": {
+      "goal_id": "4a71b110-c29f-4f43-84b5-8400700601e0",
+      "title": "Finish task",
+      "status": "Completed",
+      "details": "Goal completed successfully."
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:34:15.961735Z",
+    "event_type": "plan_completed",
+    "payload": {
+      "goal_id": "4a71b110-c29f-4f43-84b5-8400700601e0",
+      "status": "SUCCESS",
+      "result": "[LLM] Task completed",
+      "tasks": []
+    }
+  },
+  {
+    "timestamp": "2026-07-25T15:34:15.999584Z",
+    "event_type": "reflection",
+    "payload": {
+      "timestamp": "2026-07-25T15:34:15.985469Z",
+      "command": "Finish task",
+      "success": true,
+      "failed_tasks": [],
+      "failure_reasons": [],
+      "retry_recommended": false,
+      "replan_recommended": false,
+      "confidence": 0.9,
+      "summary": "Execution succeeded for 'Finish task'. 0 failed tasks. Confidence 0.90."
+    }
   }
 ]

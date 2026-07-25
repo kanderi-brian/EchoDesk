@@ -2439,6 +2439,286 @@
             "time": "2026-07-25 18:21:50.772582",
             "user": "hello",
             "EchoDesk": "Hello from the LLM."
+        },
+        {
+            "time": "2026-07-25 18:32:01.658877",
+            "user": "Explain recursion.",
+            "EchoDesk": "The AI assistant is unavailable right now. Please try again later."
+        },
+        {
+            "time": "2026-07-25 18:32:01.891443",
+            "user": "remember Buy milk",
+            "EchoDesk": "I'll remember that Buy milk."
+        },
+        {
+            "time": "2026-07-25 18:32:02.058674",
+            "user": "What happened in AI today?",
+            "EchoDesk": "Internet search summary."
+        },
+        {
+            "time": "2026-07-25 18:32:02.239149",
+            "user": "Explain recursion.",
+            "EchoDesk": "An explanation from the LLM."
+        },
+        {
+            "time": "2026-07-25 18:32:02.414922",
+            "user": "hello",
+            "EchoDesk": "Hello from the LLM."
+        },
+        {
+            "time": "2026-07-25 18:32:02.590856",
+            "user": "Read the error on my screen.",
+            "EchoDesk": "Screen analysis result."
+        },
+        {
+            "time": "2026-07-25 18:32:02.789841",
+            "user": "create goal Learn the new feature",
+            "EchoDesk": "Created goal: Learn the new feature."
+        },
+        {
+            "time": "2026-07-25 18:32:03.163651",
+            "user": "continue my work",
+            "EchoDesk": "[LLM] Task completed"
+        },
+        {
+            "time": "2026-07-25 18:32:03.682353",
+            "user": "create goal Finish project",
+            "EchoDesk": "Created goal: Finish project."
+        },
+        {
+            "time": "2026-07-25 18:32:03.841428",
+            "user": "show active goals",
+            "EchoDesk": "[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)"
+        },
+        {
+            "time": "2026-07-25 18:32:04.202129",
+            "user": "create goal Finish task",
+            "EchoDesk": "Created goal: Finish task."
+        },
+        {
+            "time": "2026-07-25 18:32:04.542847",
+            "user": "retry failed goal",
+            "EchoDesk": "[LLM] Task completed"
+        },
+        {
+            "time": "2026-07-25 18:32:04.765825",
+            "user": "hello",
+            "EchoDesk": "Answer from LLM."
+        },
+        {
+            "time": "2026-07-25 18:32:04.939678",
+            "user": "hello",
+            "EchoDesk": "Hello from the LLM."
+        },
+        {
+            "time": "2026-07-25 18:32:58.376662",
+            "user": "Explain recursion.",
+            "EchoDesk": "The AI assistant is unavailable right now. Please try again later."
+        },
+        {
+            "time": "2026-07-25 18:32:58.640890",
+            "user": "remember Buy milk",
+            "EchoDesk": "I'll remember that Buy milk."
+        },
+        {
+            "time": "2026-07-25 18:32:58.841208",
+            "user": "What happened in AI today?",
+            "EchoDesk": "Internet search summary."
+        },
+        {
+            "time": "2026-07-25 18:32:59.035101",
+            "user": "Explain recursion.",
+            "EchoDesk": "An explanation from the LLM."
+        },
+        {
+            "time": "2026-07-25 18:32:59.252412",
+            "user": "hello",
+            "EchoDesk": "Hello from the LLM."
+        },
+        {
+            "time": "2026-07-25 18:32:59.447540",
+            "user": "Read the error on my screen.",
+            "EchoDesk": "Screen analysis result."
+        },
+        {
+            "time": "2026-07-25 18:32:59.699227",
+            "user": "create goal Learn the new feature",
+            "EchoDesk": "Created goal: Learn the new feature."
+        },
+        {
+            "time": "2026-07-25 18:33:00.122875",
+            "user": "continue my work",
+            "EchoDesk": "[LLM] Task completed"
+        },
+        {
+            "time": "2026-07-25 18:33:00.705655",
+            "user": "create goal Finish project",
+            "EchoDesk": "Created goal: Finish project."
+        },
+        {
+            "time": "2026-07-25 18:33:00.844504",
+            "user": "show active goals",
+            "EchoDesk": "[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)"
+        },
+        {
+            "time": "2026-07-25 18:33:01.132235",
+            "user": "create goal Finish task",
+            "EchoDesk": "Created goal: Finish task."
+        },
+        {
+            "time": "2026-07-25 18:33:01.414590",
+            "user": "retry failed goal",
+            "EchoDesk": "[LLM] Task completed"
+        },
+        {
+            "time": "2026-07-25 18:33:01.598643",
+            "user": "hello",
+            "EchoDesk": "Answer from LLM."
+        },
+        {
+            "time": "2026-07-25 18:33:01.740230",
+            "user": "hello",
+            "EchoDesk": "Hello from the LLM."
+        },
+        {
+            "time": "2026-07-25 18:33:27.303553",
+            "user": "Explain recursion.",
+            "EchoDesk": "The AI assistant is unavailable right now. Please try again later."
+        },
+        {
+            "time": "2026-07-25 18:33:27.510682",
+            "user": "remember Buy milk",
+            "EchoDesk": "I'll remember that Buy milk."
+        },
+        {
+            "time": "2026-07-25 18:33:27.723206",
+            "user": "What happened in AI today?",
+            "EchoDesk": "Internet search summary."
+        },
+        {
+            "time": "2026-07-25 18:33:27.931467",
+            "user": "Explain recursion.",
+            "EchoDesk": "An explanation from the LLM."
+        },
+        {
+            "time": "2026-07-25 18:33:28.189720",
+            "user": "hello",
+            "EchoDesk": "Hello from the LLM."
+        },
+        {
+            "time": "2026-07-25 18:33:28.425722",
+            "user": "Read the error on my screen.",
+            "EchoDesk": "Screen analysis result."
+        },
+        {
+            "time": "2026-07-25 18:33:28.695012",
+            "user": "create goal Learn the new feature",
+            "EchoDesk": "Created goal: Learn the new feature."
+        },
+        {
+            "time": "2026-07-25 18:33:29.205691",
+            "user": "continue my work",
+            "EchoDesk": "[LLM] Task completed"
+        },
+        {
+            "time": "2026-07-25 18:33:29.689680",
+            "user": "create goal Finish project",
+            "EchoDesk": "Created goal: Finish project."
+        },
+        {
+            "time": "2026-07-25 18:33:29.806616",
+            "user": "show active goals",
+            "EchoDesk": "[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)"
+        },
+        {
+            "time": "2026-07-25 18:33:30.022864",
+            "user": "create goal Finish task",
+            "EchoDesk": "Created goal: Finish task."
+        },
+        {
+            "time": "2026-07-25 18:33:30.332808",
+            "user": "retry failed goal",
+            "EchoDesk": "[LLM] Task completed"
+        },
+        {
+            "time": "2026-07-25 18:33:30.543118",
+            "user": "hello",
+            "EchoDesk": "Answer from LLM."
+        },
+        {
+            "time": "2026-07-25 18:33:30.662624",
+            "user": "hello",
+            "EchoDesk": "Hello from the LLM."
+        },
+        {
+            "time": "2026-07-25 18:34:12.998429",
+            "user": "Explain recursion.",
+            "EchoDesk": "The AI assistant is unavailable right now. Please try again later."
+        },
+        {
+            "time": "2026-07-25 18:34:13.276261",
+            "user": "remember Buy milk",
+            "EchoDesk": "I'll remember that Buy milk."
+        },
+        {
+            "time": "2026-07-25 18:34:13.480197",
+            "user": "What happened in AI today?",
+            "EchoDesk": "Internet search summary."
+        },
+        {
+            "time": "2026-07-25 18:34:13.690181",
+            "user": "Explain recursion.",
+            "EchoDesk": "An explanation from the LLM."
+        },
+        {
+            "time": "2026-07-25 18:34:13.900649",
+            "user": "hello",
+            "EchoDesk": "Hello from the LLM."
+        },
+        {
+            "time": "2026-07-25 18:34:14.099131",
+            "user": "Read the error on my screen.",
+            "EchoDesk": "Screen analysis result."
+        },
+        {
+            "time": "2026-07-25 18:34:14.455807",
+            "user": "create goal Learn the new feature",
+            "EchoDesk": "Created goal: Learn the new feature."
+        },
+        {
+            "time": "2026-07-25 18:34:15.030097",
+            "user": "continue my work",
+            "EchoDesk": "[LLM] Task completed"
+        },
+        {
+            "time": "2026-07-25 18:34:15.462996",
+            "user": "create goal Finish project",
+            "EchoDesk": "Created goal: Finish project."
+        },
+        {
+            "time": "2026-07-25 18:34:15.552268",
+            "user": "show active goals",
+            "EchoDesk": "[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)\n[Pending] Finish task (priority=50, progress=0.0%)\n[Pending] Learn the new feature (priority=50, progress=0.0%)\n[Pending] Finish project (priority=50, progress=0.0%)"
+        },
+        {
+            "time": "2026-07-25 18:34:15.775399",
+            "user": "create goal Finish task",
+            "EchoDesk": "Created goal: Finish task."
+        },
+        {
+            "time": "2026-07-25 18:34:16.077104",
+            "user": "retry failed goal",
+            "EchoDesk": "[LLM] Task completed"
+        },
+        {
+            "time": "2026-07-25 18:34:16.352757",
+            "user": "hello",
+            "EchoDesk": "Answer from LLM."
+        },
+        {
+            "time": "2026-07-25 18:34:16.496627",
+            "user": "hello",
+            "EchoDesk": "Hello from the LLM."
         }
     ],
     "facts": [

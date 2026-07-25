@@ -46,3 +46,12 @@ def load_config(path: str | None = None) -> Dict[str, Any]:
 
 def get_config() -> Dict[str, Any]:
     return load_config()
+
+
+def save_config(config: Dict[str, Any], path: str | None = None) -> None:
+    """Persist settings while retaining the existing lazy configuration API."""
+    global _CONFIG
+    cfg_path = Path(path) if path else Path(os.environ.get("ECHODESK_CONFIG", "config.json"))
+    with open(cfg_path, "w", encoding="utf-8") as handle:
+        json.dump(config, handle, indent=2, sort_keys=True)
+    _CONFIG = config
