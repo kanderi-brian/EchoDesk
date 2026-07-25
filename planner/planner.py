@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any, List
+from performance.metrics import TTLCache
 
 
 class ExecutionStatus(str, Enum):
@@ -138,6 +139,8 @@ class PlannerEngine:
         self.automation_engine = automation_engine
         self.learning_engine = learning_engine
         self.plugin_registry = plugin_registry
+        # Plans are immutable templates to callers: cached entries are cloned before return.
+        self._plan_cache = TTLCache(ttl=120.0, maxsize=128, name="planner")
 
     def set_plugin_registry(self, registry: Any | None) -> None:
         self.plugin_registry = registry
@@ -161,6 +164,11 @@ class PlannerEngine:
         """
         if not isinstance(command, str):
             return None
+
+        cached = self._plan_cache.get(command.strip().casefold())
+        if cached is not None:
+            import copy
+            return copy.deepcopy(cached)
 
         text = command.strip().lower()
         if not text:
@@ -224,7 +232,10 @@ class PlannerEngine:
         for routine in routines:
             steps = routine(text)
             if steps is not None:
-                return self._build_plan(command, steps)
+                plan = self._build_plan(command, steps)
+                self._plan_cache.set(command.strip().casefold(), plan)
+                import copy
+                return copy.deepcopy(plan)
 
         return None
 

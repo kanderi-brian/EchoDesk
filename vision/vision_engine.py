@@ -14,6 +14,7 @@ from mss import MSS
 from .models import UIActionTarget, UIElement, UIScene, UIWindow
 from .scene_graph import SceneDifference, SceneGraph
 from .ui_understanding import UIUnderstanding
+from performance.metrics import TTLCache
 
 
 @dataclass
@@ -51,6 +52,8 @@ class VisionEngine:
         self.ui_understanding = UIUnderstanding()
         self.scene_graph = SceneGraph()
         self._scene_cache: UIScene | None = None
+        self._ocr_cache = TTLCache(ttl=30.0, maxsize=8, name="vision_ocr")
+        self._scene_results = TTLCache(ttl=30.0, maxsize=8, name="vision_scene")
         self._logger = logging.getLogger("echodesk.vision")
         if not self._logger.handlers:
             os.makedirs("logs", exist_ok=True)
@@ -86,27 +89,36 @@ class VisionEngine:
     def extract_text(self, image: Image.Image) -> list[dict[str, Any]]:
         """Run OCR on the provided image and return detected text with metadata."""
         self._logger.info("Running OCR")
+        digest = hashlib.sha256(image.tobytes()).hexdigest()
+        cached = self._ocr_cache.get(digest)
+        if cached is not None:
+            self._logger.info("OCR cache hit")
+            return [dict(item) for item in cached]
         self._initialize_ocr_reader()
         if self.ocr_reader is None:
-            return [
+            result = [
                 {
                     "text": "",
                     "confidence": 0.0,
                     "box": None,
                 }
             ]
+            self._ocr_cache.set(digest, result)
+            return result
 
         try:
             image_array = np.array(image)
             raw_results = self.ocr_reader.readtext(image_array)
         except Exception:
-            return [
+            result = [
                 {
                     "text": "",
                     "confidence": 0.0,
                     "box": None,
                 }
             ]
+            self._ocr_cache.set(digest, result)
+            return result
 
         extracted = []
         for result in raw_results:
@@ -118,6 +130,7 @@ class VisionEngine:
                     "box": [int(point[0]) for point in box[0:2]] + [int(point[2]) for point in box[2:4]] if isinstance(box, list) and len(box) >= 4 else None,
                 }
             )
+        self._ocr_cache.set(digest, extracted)
         return extracted
 
     def describe_image(self, image: Image.Image) -> VisionResult:
@@ -165,6 +178,10 @@ class VisionEngine:
         else:
             image = self.capture_screen()
         digest = hashlib.sha256(image.tobytes()).hexdigest()
+        cached_scene = self._scene_results.get(digest)
+        if cached_scene is not None:
+            self._scene_cache = cached_scene
+            return cached_scene
         if not refresh and self._scene_cache and self._scene_cache.image_hash == digest:
             return self._scene_cache
         entries = self.extract_text(image)
@@ -174,6 +191,7 @@ class VisionEngine:
         scene.image_hash = digest
         scene.captured_at = datetime.now(timezone.utc).isoformat()
         self._scene_cache = scene
+        self._scene_results.set(digest, scene)
         self._logger.info("Scene captured: windows=%s controls=%s profile=%s", len(scene.windows), len(scene.elements), scene.metadata.get("profile"))
         return scene
 

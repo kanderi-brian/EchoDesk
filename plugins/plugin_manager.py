@@ -14,6 +14,7 @@ from .base_plugin import PluginMetadata
 from .plugin_loader import PluginLoader
 from .plugin_permissions import PluginPermissions
 from .plugin_validator import PluginValidator
+from performance.metrics import TTLCache
 
 
 class PluginManager:
@@ -26,6 +27,7 @@ class PluginManager:
         self.validator = PluginValidator()
         self.loader = PluginLoader()
         self.metadata: dict[str, PluginMetadata] = {}
+        self._discovery_cache = TTLCache(ttl=15.0, maxsize=1, name="plugin_metadata")
         self.execution_log: list[dict[str, Any]] = []
         self.learning_engine: Any | None = None
         self.security_engine = security_engine
@@ -50,6 +52,9 @@ class PluginManager:
 
     def discover(self) -> List[str]:
         """Discover plugin directories without importing their implementation."""
+        cached = self._discovery_cache.get("directories")
+        if cached is not None:
+            return list(cached)
         found: list[str] = []
         try:
             ignored = {"__pycache__", "plugin", "plugin_manager", "plugin_registry", "base_plugin", "plugin_loader", "plugin_validator", "plugin_permissions", "sample_plugins"}
@@ -60,7 +65,9 @@ class PluginManager:
                     found.append(entry.name)
         except Exception:
             self.logger.exception("Plugin discovery failed")
-        return sorted(found)
+        result = sorted(found)
+        self._discovery_cache.set("directories", result)
+        return result
 
     def discover_metadata(self) -> dict[str, PluginMetadata]:
         """Return valid optional ``plugin.json`` declarations without importing code."""
@@ -314,6 +321,7 @@ class PluginManager:
                 self.registry.unregister(p.name)
             self.registry = PluginRegistry()
             self.metadata.clear()
+            self._discovery_cache.clear()
             self.logger.info("Shutdown all plugins and cleared registry")
         except Exception:
             self.logger.exception("Failed during shutdown_plugins")

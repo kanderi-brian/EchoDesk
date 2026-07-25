@@ -78,6 +78,26 @@ The bundled examples are `system_info`, `git`, `github`, `calendar`, and
 restricted with `PluginPermissions(granted=...)`; execution is denied whenever
 a plugin has not been granted every declared permission.
 
+## Performance architecture
+
+Phase 21 keeps startup lightweight by retaining lazy Vision/OCR and optional
+plugin loading. `performance/` provides a thread-safe metrics collector,
+bounded TTL caches, profiling helper, and repeatable in-process benchmark
+runner. Planning templates, OCR/scene results, and plugin discovery metadata
+are cached only briefly and with fixed capacities, preventing unbounded memory
+growth while preserving the existing APIs.
+
+Independent specialist tasks remain parallelized by the dependency-aware agent
+scheduler; dependent tasks are never started early. The performance dashboard
+is available through `EchoBrain.get_performance_summary()` and reports startup,
+command latency, process memory/CPU, cache statistics, scheduler, plugin, and
+Vision metrics. Timing and cache-related diagnostics are written to
+`logs/performance.log`.
+
+For comparable release measurements, use `BenchmarkRunner.run(name, workload,
+iterations=3)` with a deterministic workload. Benchmarks intentionally do not
+perform desktop actions themselves.
+
 ## Security and Safety
 
 Phase 20 adds a centralized `SecurityEngine` used by EchoBrain, agents,

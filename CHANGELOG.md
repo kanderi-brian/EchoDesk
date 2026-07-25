@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.0] - 2026-07-25
+
+### Added
+
+- Phase 21 performance instrumentation, bounded expiring caches, a reusable benchmark runner, and a consolidated EchoBrain performance dashboard.
+- Plan-template, Vision OCR/scene, and plugin-discovery caching with fixed capacities and expiry, plus dedicated `logs/performance.log` telemetry.
+
 ## [3.6.0] - 2026-07-25
 
 ### Added

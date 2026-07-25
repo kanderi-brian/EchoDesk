@@ -21,6 +21,7 @@ from agent.project_agent import ProjectAgent
 from agents import AgentContext, AgentRegistry, AgentScheduler, CodingAgent, DesktopAgent, MemoryAgent, PlannerAgent, ResearchAgent, VisionAgent
 from learning import LearningEngine
 from security import SecurityEngine
+from performance import MetricsCollector, PerformanceProfiler, BenchmarkRunner
 
 # configuration and logging
 from core.config import get_config
@@ -38,6 +39,10 @@ class EchoBrain:
         desktop_controller: Optional[Any] = None,
         context_engine: Optional[Any] = None,
     ):
+        self.metrics = MetricsCollector()
+        self.profiler = PerformanceProfiler(self.metrics)
+        self.benchmarks = BenchmarkRunner(self.metrics)
+        startup_started = time.perf_counter()
         self.router = Router()
 
         # Conversation history
@@ -67,6 +72,7 @@ class EchoBrain:
         self.agent_runtime = AgentRuntime(self)
 
         self.planner = PlannerEngine(learning_engine=self.memory_engine)
+        self.metrics.register_cache(self.planner._plan_cache)
         # create executor but avoid forcing heavy engine instantiation (they'll be lazy-loaded)
         self.executor = TaskExecutor(
             memory_engine=self.memory_engine,
@@ -134,6 +140,17 @@ class EchoBrain:
             # Plugin loading must not crash EchoBrain
             self.logger.exception("PluginManager failed to initialize")
             self.plugin_manager = None
+        self.metrics.record("startup", time.perf_counter() - startup_started)
+
+    def get_performance_summary(self) -> dict[str, Any]:
+        """Return aggregate Phase 21 operational metrics without request content."""
+        summary = self.metrics.summary()
+        summary["startup_time_ms"] = summary["timings"].get("startup", {}).get("last_ms", 0.0)
+        summary["execution_latency"] = summary["timings"].get("command", {})
+        summary["scheduler_metrics"] = self.get_agent_metrics()
+        summary["plugin_metrics"] = {"loaded": len(self.plugin_manager.list_plugins()) if self.plugin_manager else 0}
+        summary["vision_metrics"] = summary["timings"].get("vision", {})
+        return summary
 
     def reload_plugins(self) -> int:
         """Reload plugins at runtime via PluginManager."""
@@ -671,6 +688,7 @@ class EchoBrain:
         print("[EchoBrain] Received request")
         start_time = time.perf_counter()
 
+        self.metrics.increment("commands")
         if self.context_engine is not None:
             try:
                 self.context_engine.expire_context()
@@ -772,6 +790,7 @@ class EchoBrain:
         )
 
         elapsed = time.perf_counter() - start_time
+        self.metrics.record("command", elapsed)
         print(f"[EchoBrain] Completed request in {elapsed:.3f}s")
 
         structured_response = {
