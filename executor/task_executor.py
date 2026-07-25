@@ -139,18 +139,18 @@ class TaskExecutor:
                 if pm is None:
                     return {"success": False, "message": "No plugin manager available."}
                 try:
-                    registry = pm.get_registry()
-                    handler = registry.find_handler(command)
-                    if not handler:
+                    result = pm.execute(command) if hasattr(pm, "execute") else None
+                    if result is None:
                         return {"success": False, "message": "No plugin found to handle the command."}
                     try:
-                        result = handler.execute(command)
+                        if isinstance(result, dict) and result.get("success") is False:
+                            return {"success": False, "message": str(result.get("message", "Plugin execution denied."))}
                         if result is None:
                             return {"success": True, "message": ""}
                         return {"success": True, "message": str(result)}
                     except Exception as exc:
-                        self.logger.exception("Plugin execution failed: %s", getattr(handler, "name", "?"))
-                        return {"success": False, "message": f"Plugin {getattr(handler, 'name', '?')} execution failed: {exc}"}
+                        self.logger.exception("Plugin execution failed")
+                        return {"success": False, "message": f"Plugin execution failed: {exc}"}
                 except Exception:
                     self.logger.exception("Plugin registry error during plugin capability execution")
                     return {"success": False, "message": "Plugin execution failed due to registry error."}
@@ -162,7 +162,9 @@ class TaskExecutor:
                     handler = registry.find_handler(command)
                     if handler:
                         try:
-                            result = handler.execute(command)
+                            result = pm.execute(command) if hasattr(pm, "execute") else handler.execute(command)
+                            if isinstance(result, dict) and result.get("success") is False:
+                                return {"success": False, "message": str(result.get("message", "Plugin execution denied."))}
                             # normalize result to string where appropriate
                             if result is None:
                                 return {"success": True, "message": ""}

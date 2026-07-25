@@ -32,6 +32,52 @@ Desktop controllers can act on UI elements (`click_element`,
 detail. Scene data is cached by screen hash and vision diagnostics are recorded
 in `logs/vision.log`.
 
+## Multi-Agent Architecture
+
+EchoBrain remains EchoDesk's single entry point while the `agents` framework
+coordinates specialized Planner, Coding, Research, Desktop, Vision, and Memory
+agents. Agents exchange `AgentTask` and `AgentResult` records through a shared,
+thread-safe `AgentContext`; they do not modify one another's internal state.
+`AgentRegistry` permits extensions without changes to EchoBrain, and
+`AgentScheduler` resolves dependencies, retries failed assignments, and runs
+independent work in parallel. Planner conflict resolution selects proposals from
+verification status and confidence. Per-agent task, retry, timing, and
+verification metrics are available through `EchoBrain.get_agent_metrics()`.
+Collaboration diagnostics are stored in `logs/agents.log`.
+
+## Self-Learning and Personalization
+
+`LearningEngine` stores structured outcome metadata through `MemoryEngine` and
+ranks strategies by success, verification rate, confidence, usage, and elapsed
+time. Planner agents request ranked prior strategies before planning, while
+agents contribute safe learning events after work completes. The engine can
+recommend plans, workflows, and recovery strategies, and explain selections;
+it never modifies code, prompts, approvals, or system configuration. Learning
+metrics and preferences are exposed through `EchoBrain.get_learning_summary()`
+and diagnostics are recorded in `logs/learning.log`.
+
+## Plugins
+
+Phase 19 provides a backward-compatible plugin framework for extending EchoDesk
+without changing core services. `PluginManager` discovers folders containing a
+`plugin.py`, validates declarative metadata, resolves dependencies before
+initialization, and registers only plugins whose requested permissions are
+known. Plugin lifecycle operations include install, enable, disable, unload,
+update, reload, and uninstall; a dependency cannot be disabled or removed while
+an enabled dependent still needs it.
+
+Plugins are routed by `PluginRegistry` into the Planner and TaskExecutor.
+Optional `configure_agents`, `configure_planner`, `configure_learning`, and
+`configure_brain` hooks run only after EchoBrain has constructed its services.
+Every invocation, failure, and permission denial is retained in the manager's
+bounded execution log and written to `logs/plugins.log`; successful and failed
+plugin runs are also recorded by LearningEngine when it is available.
+
+The bundled examples are `system_info`, `git`, `github`, `calendar`, and
+`file_tools`. They use safe read-only commands by default. Permissions can be
+restricted with `PluginPermissions(granted=...)`; execution is denied whenever
+a plugin has not been granted every declared permission.
+
 ## Autonomous Project Agent
 
 `ProjectAgent` adds an autonomous orchestration layer over the existing Brain,
@@ -110,7 +156,8 @@ Run the validation suite with:
 python -m unittest discover tests
 ```
 
-The current validation suite contains 44 passing tests.
+Run the complete suite with `python -m pytest` when pytest is available, or
+`python -m unittest discover tests` for the standard-library runner.
 
 ## Roadmap
 

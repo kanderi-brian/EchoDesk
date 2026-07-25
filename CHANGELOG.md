@@ -1,5 +1,28 @@
 # Changelog
 
+## [3.5.0] - 2026-07-25
+
+### Added
+
+- Phase 19 plugin framework completion: deterministic filesystem discovery, metadata validation, dependency-aware batch installation, lifecycle controls, permission enforcement, and bounded execution logging.
+- Safe sample plugins for Git, GitHub guidance, local calendar, and workspace file tools alongside the existing system-information plugin.
+- Optional plugin integration hooks for agents, planner, LearningEngine, and EchoBrain.
+
+## [3.4.0] - 2026-07-25
+
+### Added
+
+- Phase 18 safe LearningEngine with persistent structured strategy records, preference reinforcement/decay, workflow reuse, recovery detection, rankings, and explainable recommendations.
+- Adaptive PlannerAgent recommendations and EchoBrain learning dashboard summary.
+
+## [3.3.0] - 2026-07-25
+
+### Added
+
+- Phase 17 multi-agent framework with structured task/results, registry, shared context, dependency scheduler, metrics, and learning hooks.
+- Planner, Coding, Research, Desktop, Vision, and Memory specialists composed from existing EchoDesk engines.
+- EchoBrain collaboration dispatch and agent metrics, with diagnostics in `logs/agents.log`.
+
 ## [3.2.0] - 2026-07-25
 
 ### Added

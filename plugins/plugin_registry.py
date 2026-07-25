@@ -13,12 +13,16 @@ class PluginRegistry:
 
     def register(self, plugin: Plugin) -> bool:
         """Register a plugin instance. Returns True if registered, False if duplicate."""
-        if plugin.name in self._plugins:
+        name = str(getattr(plugin, "name", "")).strip()
+        if not name:
+            self.logger.warning("Attempt to register a plugin without a name")
+            return False
+        if name in self._plugins:
             self.logger.warning("Plugin with name '%s' already registered", plugin.name)
             return False
 
-        self._plugins[plugin.name] = plugin
-        self.logger.info("Registered plugin '%s'", plugin.name)
+        self._plugins[name] = plugin
+        self.logger.info("Registered plugin '%s'", name)
         return True
 
     def unregister(self, plugin_name: str) -> bool:
@@ -45,11 +49,11 @@ class PluginRegistry:
     def get_all(self) -> List[Plugin]:
         return list(self._plugins.values())
 
-    def find_by_capability(self, capability: str) -> List[Plugin]:
+    def find_by_capability(self, capability: str, enabled_only: bool = True) -> List[Plugin]:
         result = []
         for p in self._plugins.values():
             try:
-                if capability in getattr(p, "capabilities", []):
+                if (not enabled_only or getattr(p, "enabled", True)) and capability in getattr(p, "capabilities", []):
                     result.append(p)
             except Exception:
                 self.logger.exception("Error checking capabilities for plugin '%s'", getattr(p, "name", "?"))
@@ -80,6 +84,13 @@ class PluginRegistry:
     def find_handlers(self, capability: str) -> List[Plugin]:
         """Alias for find_by_capability (plural)."""
         return self.find_by_capability(capability)
+
+    def dependents_of(self, plugin_name: str) -> List[Plugin]:
+        """Return registered plugins that declare a dependency on ``plugin_name``."""
+        return [
+            plugin for plugin in self._plugins.values()
+            if plugin_name in getattr(plugin, "dependencies", [])
+        ]
 
     def supports(self, command: str) -> bool:
         """Return True if any registered and enabled plugin can handle the command."""

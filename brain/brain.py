@@ -18,6 +18,8 @@ from reflection.reflection_engine import ReflectionEngine
 from history.history_engine import HistoryEngine
 from scheduler.scheduler import Scheduler
 from agent.project_agent import ProjectAgent
+from agents import AgentContext, AgentRegistry, AgentScheduler, CodingAgent, DesktopAgent, MemoryAgent, PlannerAgent, ResearchAgent, VisionAgent
+from learning import LearningEngine
 
 # configuration and logging
 from core.config import get_config
@@ -51,6 +53,7 @@ class EchoBrain:
         self.desktop_controller = desktop_controller
 
         self.memory_engine = MemoryEngine()
+        self.learning_engine = LearningEngine(self.memory_engine)
 
         # Goal management and execution pipeline
         self.goal_manager = GoalManager()
@@ -77,6 +80,19 @@ class EchoBrain:
             executor=self.executor,
             memory_engine=self.memory_engine,
         )
+        # Phase 17 collaboration is additive: EchoBrain remains the entry point
+        # while specialists exchange only AgentTask/AgentResult messages.
+        services = {
+            "planner": self.planner, "executor": self.executor,
+            "memory_engine": self.memory_engine, "knowledge_engine": self.knowledge,
+            "internet_engine": self.internet_engine, "desktop_controller": self.desktop_controller,
+            "vision_engine": None, "learning_engine": self.learning_engine,
+        }
+        self.agent_registry = AgentRegistry()
+        for specialist in (PlannerAgent(**services), CodingAgent(**services), ResearchAgent(**services), DesktopAgent(**services), VisionAgent(**services), MemoryAgent(**services)):
+            self.agent_registry.register(specialist)
+        self.agent_scheduler = AgentScheduler(self.agent_registry)
+        self.agent_context = AgentContext()
 
         # Lazy-loaded vision modules
         self.capture = None
@@ -103,11 +119,10 @@ class EchoBrain:
                 try:
                     if hasattr(self, "executor") and self.executor is not None:
                         self.executor.plugin_manager = self.plugin_manager
-                    if hasattr(self, "planner") and self.planner is not None:
-                        try:
-                            self.planner.set_plugin_registry(self.plugin_manager.get_registry())
-                        except Exception:
-                            pass
+                    self.plugin_manager.integrate(
+                        brain=self, agent_registry=self.agent_registry,
+                        planner=self.planner, learning_engine=self.learning_engine,
+                    )
                 except Exception:
                     self.logger.exception("Failed to attach plugin manager to subsystems")
         except Exception:
@@ -120,7 +135,12 @@ class EchoBrain:
         if getattr(self, "plugin_manager", None) is None:
             return 0
         try:
-            return self.plugin_manager.reload_plugins()
+            loaded = self.plugin_manager.reload_plugins()
+            self.plugin_manager.integrate(
+                brain=self, agent_registry=self.agent_registry,
+                planner=self.planner, learning_engine=self.learning_engine,
+            )
+            return loaded
         except Exception:
             self.logger.exception("reload_plugins failed")
             return 0
@@ -156,6 +176,18 @@ class EchoBrain:
             "execution_state": report.state.value if report.state else None,
             "current_step": report.current_step,
         }
+
+    def get_agent_metrics(self) -> dict[str, dict[str, float | int]]:
+        """Expose Phase 17 specialist activity without altering legacy metrics."""
+        return self.agent_registry.metrics()
+
+    def get_learning_summary(self) -> dict[str, Any]:
+        """Return safe, explainable learning metadata for the dashboard."""
+        return self.learning_engine.get_statistics()
+
+    def run_agent_tasks(self, tasks: list[Any], parallel: bool = True) -> dict[str, Any]:
+        """Dispatch structured AgentTask instances through the collaboration scheduler."""
+        return self.agent_scheduler.run(tasks, self.agent_context, parallel=parallel)
 
     def submit_project_goal(self, objective: str, priority: int = 50, background: bool = True):
         """Queue a ProjectAgent goal while retaining existing GoalManager behavior."""
