@@ -113,6 +113,37 @@ high-contrast system themes. It saves the most recently opened Studio page in
 `studio_session.json`; settings use the existing configuration file through
 the Settings page. Sessions never contain secrets.
 
+## Desktop assistant window
+
+The default Windows startup now opens a compact, always-on-top EchoDesk
+assistant at the top centre of the primary display. The frameless window has
+a transparent surround, animated microphone, and one clear voice state:
+Idle, Listening, Thinking, or Speaking. It uses the existing `EchoBrain` and
+`VoiceEngine`; planning, memory, automation, and AI behavior remain unchanged.
+
+Closing the window hides it in the system tray. Use the tray menu to show it
+again or exit EchoDesk. Start with `--console` when a terminal session is
+needed. The existing Studio control centre remains available through
+`ui.studio.run_studio()`.
+
+## Intelligent intent routing
+
+EchoBrain classifies each request before execution with a confidence-scored,
+registry-based router. High-confidence desktop, internet, knowledge, memory,
+vision, and coding requests are sent to their existing subsystems; general or
+low-confidence requests use the LLM. Knowledge responses retain their existing
+LLM fallback. Routing decisions are logged as intent, confidence, and selected
+engine for support diagnostics.
+
+## Windows desktop release (v3.2.0)
+
+End users install and launch EchoDesk by double-clicking `EchoDesk.exe`; no
+editor or Python installation is required. The Inno Setup installer provides
+Start Menu, optional Desktop, and optional sign-in startup shortcuts. Personal
+data stays in `%LOCALAPPDATA%\EchoDesk`, keeping the installed application
+directory read-only. See [the installation guide](docs/INSTALLATION.md) for
+the installer and build output locations.
+
 ## Security and Safety
 
 Phase 20 adds a centralized `SecurityEngine` used by EchoBrain, agents,
@@ -214,7 +245,7 @@ Run the complete suite with `python -m pytest` when pytest is available, or
 
 **Current Version**
 
-EchoDesk v3.0 (Production)
+EchoDesk v2.0.1 (Production)
 
 **Next**
 

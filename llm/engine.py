@@ -1,4 +1,5 @@
 import logging
+from threading import Thread
 from typing import Optional
 
 from .ollama_provider import OllamaProvider
@@ -35,6 +36,12 @@ class LLMEngine:
         except Exception as e:
             self.logger.exception("LLM provider.generate raised an exception")
             return f"LLM provider failed: {e}"
+
+    def ask_async(self, prompt: str, callback, context: str | None = None) -> Thread:
+        """Run a request outside a caller's UI thread while retaining the synchronous API."""
+        worker = Thread(target=lambda: callback(self.ask(prompt, context)), name="EchoDeskLLM", daemon=True)
+        worker.start()
+        return worker
 
     def summarize(self, text: str) -> str:
         """Ask the provider to summarize the provided text."""

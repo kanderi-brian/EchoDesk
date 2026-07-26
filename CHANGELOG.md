@@ -1,5 +1,26 @@
 # Changelog
 
+## [3.2.0] - 2026-07-25
+
+### Added
+
+- Windows application packaging with PyInstaller metadata, generated executable icon, and Inno Setup installer definition.
+- Per-user runtime data directory, category-based rotating production logs, startup/crash support, Ollama status diagnostics, and an About dialog.
+- Installer options for Desktop, Start Menu, and optional sign-in launch shortcuts without touching user data during upgrades.
+
+## [2.0.1] - 2026-07-25
+
+### Fixed
+
+- Stabilized long-running LLM task execution, knowledge fallback, transient internet search retries, Studio-first startup, and runtime diagnostics.
+
+## [2.0.0] - 2026-07-25
+
+### Added
+
+- Final production release metadata, `pyproject.toml` packaging configuration, Windows portable build support, configuration profiles, setup model, validated backup/restore, diagnostics, and recovery utilities.
+- Installation, user, administrator, plugin, troubleshooting, FAQ, architecture, security, and release-note documentation for EchoDesk 2.0.
+
 ## [3.8.0] - 2026-07-25
 
 ### Added
@@ -68,7 +89,7 @@
 
 ### Added
 
-- Production release: EchoDesk v3.0
+- Production release baseline: EchoDesk v2.0.0
 - Centralized configuration (core/config.py)
 - Centralized logging with rotation (core/logging_config.py)
 - Lazy loading of heavy engines (LLM, Vision, Voice) in TaskExecutor

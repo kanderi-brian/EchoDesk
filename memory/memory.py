@@ -1,5 +1,6 @@
 import json
 import os
+from core.app_paths import data_root
 from datetime import datetime
 
 
@@ -7,7 +8,8 @@ class Memory:
 
     def __init__(self):
 
-        self.file = "memory.json"
+        root = data_root(); root.mkdir(parents=True, exist_ok=True)
+        self.file = str(root / "memory.json")
 
         if not os.path.exists(self.file):
             self.create_memory()

@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -19,7 +20,7 @@ class MemoryStorage:
             if not path.parent.exists():
                 path.parent.mkdir(parents=True, exist_ok=True)
 
-            with sqlite3.connect(self.db_path) as connection:
+            with closing(sqlite3.connect(self.db_path)) as connection:
                 cursor = connection.cursor()
                 try:
                     cursor.execute(
@@ -57,7 +58,7 @@ class MemoryStorage:
 
         try:
             record = MemoryRecord.create(key.strip(), str(value), category or "general")
-            with sqlite3.connect(self.db_path) as connection:
+            with closing(sqlite3.connect(self.db_path)) as connection:
                 cursor = connection.cursor()
                 try:
                     cursor.execute(
@@ -84,7 +85,7 @@ class MemoryStorage:
                 return init_result
 
         try:
-            with sqlite3.connect(self.db_path) as connection:
+            with closing(sqlite3.connect(self.db_path)) as connection:
                 cursor = connection.cursor()
                 try:
                     cursor.execute(
@@ -116,7 +117,7 @@ class MemoryStorage:
 
         try:
             updated_at = datetime.now(timezone.utc).isoformat()
-            with sqlite3.connect(self.db_path) as connection:
+            with closing(sqlite3.connect(self.db_path)) as connection:
                 cursor = connection.cursor()
                 try:
                     cursor.execute(
@@ -142,7 +143,7 @@ class MemoryStorage:
                 return init_result
 
         try:
-            with sqlite3.connect(self.db_path) as connection:
+            with closing(sqlite3.connect(self.db_path)) as connection:
                 cursor = connection.cursor()
                 try:
                     cursor.execute("DELETE FROM memory_records WHERE key = ?", (key.strip(),))
@@ -162,7 +163,7 @@ class MemoryStorage:
                 return init_result
 
         try:
-            with sqlite3.connect(self.db_path) as connection:
+            with closing(sqlite3.connect(self.db_path)) as connection:
                 cursor = connection.cursor()
                 try:
                     cursor.execute(

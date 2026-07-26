@@ -1,0 +1,9 @@
+{
+  "name": "EchoDesk",
+  "version": "3.2.0",
+  "channel": "production",
+  "entry_point": "main:main",
+  "artifacts": ["windows-installer", "portable-zip"],
+  "minimum_python": "3.11",
+  "secrets_embedded": false
+}

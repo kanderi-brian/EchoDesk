@@ -1,0 +1,292 @@
+[EchoBrain] Received request
+[Memory] Saved
+[EchoBrain] Completed request in 0.041s
+[EchoBrain] Received request
+[Memory] Saved
+[EchoBrain] Completed request in 0.049s
+[EchoBrain] Received request
+[Memory] Saved
+[EchoBrain] Completed request in 0.039s
+[EchoBrain] Received request
+[Memory] Saved
+[EchoBrain] Completed request in 0.047s
+[EchoBrain] Received request
+[Memory] Saved
+[EchoBrain] Completed request in 0.050s
+[EchoBrain] Received request
+[Memory] Saved
+[EchoBrain] Completed request in 0.055s
+[EchoBrain] Received request
+[Memory] Saved
+[EchoBrain] Completed request in 0.085s
+[EchoBrain] Received request
+[Executor] Executing plan
+[Task 1/1] Running LLM
+[Executor] Progress - Completed: 0, Running: 1, Failed: 0, Remaining: 0
+[Memory] Saved
+[Executor] Progress - Completed: 1, Running: 0, Failed: 0, Remaining: 0
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[EchoBrain] Completed request in 0.179s
+[EchoBrain] Received request
+[Memory] Saved
+[EchoBrain] Completed request in 0.065s
+[EchoBrain] Received request
+[Memory] Saved
+[EchoBrain] Completed request in 0.066s
+[EchoBrain] Received request
+[Memory] Saved
+[EchoBrain] Completed request in 0.063s
+[EchoBrain] Received request
+[Executor] Executing plan
+[Task 1/1] Running LLM
+[Executor] Progress - Completed: 0, Running: 1, Failed: 0, Remaining: 0
+[Memory] Saved
+[Executor] Progress - Completed: 1, Running: 0, Failed: 0, Remaining: 0
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[EchoBrain] Completed request in 0.148s
+[EchoBrain] Received request
+[Memory] Saved
+[EchoBrain] Completed request in 0.068s
+[EchoBrain] Received request
+[Memory] Saved
+[EchoBrain] Completed request in 0.062s
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Learning] Preference learned
+[Memory] Saved
+[Learning] Preference updated
+[Memory] Saved
+[Learning] Preference learned
+[Memory] Saved
+[Memory] Saved
+[Learning] Preference learned
+[Memory] Saved
+[Learning] Preference learned
+[Learning] Preference updated
+[Memory] Saved
+[Learning] Recommendation generated
+[Memory] Saved
+[Learning] Preference learned
+[Memory] Saved
+[Learning] Preference learned
+[Learning] Preference removed
+[Memory] Saved
+[Learning] Preference learned
+[Memory] Saved
+[Memory] Saved
+[Learning] Preference learned
+[Learning] Preference updated
+[EchoBrain] Received request
+[Executor] Executing plan
+[Task 1/1] Running Plugin
+[Executor] Progress - Completed: 0, Running: 1, Failed: 0, Remaining: 0
+[Memory] Saved
+[Executor] Progress - Completed: 1, Running: 0, Failed: 0, Remaining: 0
+[Executor] Executing plan
+[Task 1/1] Running Plugin
+[Executor] Progress - Completed: 0, Running: 1, Failed: 0, Remaining: 0
+[Retry] Task failed: Plugin execution failed due to registry error.
+[Memory] Saved
+[Executor] Progress - Completed: 0, Running: 0, Failed: 1, Remaining: 0
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Learning] Preference learned
+[Memory] Saved
+[Learning] Preference updated
+[Memory] Saved
+[Learning] Preference learned
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[Memory] Saved
+[EchoBrain] Received request
+[Learning] Preference updated
+[Memory] Saved
+[EchoBrain] Completed request in 0.062s
+[EchoBrain] Received request
+[Memory] Saved
+[EchoBrain] Completed request in 0.114s
+[Executor] Executing plan
+[Task 1/1] Running NoSuchCapability
+[Executor] Progress - Completed: 0, Running: 1, Failed: 0, Remaining: 0
+[Retry] Task failed: Capability NoSuchCapability is not supported.
+[Memory] Saved
+[Executor] Progress - Completed: 0, Running: 0, Failed: 1, Remaining: 0
+[Executor] Executing plan
+[Task 1/1] Running System
+[Executor] Progress - Completed: 0, Running: 1, Failed: 0, Remaining: 0
+[Memory] Saved
+[Executor] Progress - Completed: 1, Running: 0, Failed: 0, Remaining: 0
+[Executor] Executing plan
+[Task 1/2] Running Internet
+[Executor] Progress - Completed: 0, Running: 1, Failed: 0, Remaining: 1
+[Retry] Task failed: Internet unavailable
+[Memory] Saved
+[Executor] Remaining tasks depend on failed task; halting execution.
+[Executor] Executing plan
+[Task 1/1] Running Memory
+[Executor] Progress - Completed: 0, Running: 1, Failed: 0, Remaining: 0
+[Learning] Preference updated
+[Memory] Saved
+[Executor] Progress - Completed: 1, Running: 0, Failed: 0, Remaining: 0
+[Executor] Executing plan
+[Task 1/2] Running Internet
+[Executor] Progress - Completed: 0, Running: 1, Failed: 0, Remaining: 1
+[Memory] Saved
+[Executor] Progress - Completed: 1, Running: 0, Failed: 0, Remaining: 1
+[Task 2/2] Running LLM
+[Executor] Progress - Completed: 1, Running: 1, Failed: 0, Remaining: 0
+[Memory] Saved
+[Executor] Progress - Completed: 2, Running: 0, Failed: 0, Remaining: 0
+Studio unavailable or console requested: available

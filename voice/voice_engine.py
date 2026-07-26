@@ -1,6 +1,7 @@
 """Offline voice interface for EchoDesk."""
 
 import queue
+import logging
 import threading
 import time
 from dataclasses import dataclass, field
@@ -63,6 +64,7 @@ class VoiceEngine:
         tts_module: Optional[Any] = None,
     ) -> None:
         self.config = config or VoiceConfig()
+        self.logger = logging.getLogger("echodesk.voice")
         self.session = VoiceSession()
         self.sr_module = sr_module if sr_module is not None else sr
         self.tts_module = tts_module if tts_module is not None else pyttsx3
@@ -116,19 +118,19 @@ class VoiceEngine:
                 continue
 
             self.session.speaking = True
-            print("[Voice] Speaking...")
+            self.logger.debug("Speaking")
             if self._initialize_tts():
                 try:
                     with self.speak_lock:
                         self.tts_engine.say(text)
                         self.tts_engine.runAndWait()
                 except Exception as exc:
-                    print(f"[Voice] Speak failed: {exc}")
+                    self.logger.warning("Speech output failed: %s", exc)
             else:
-                print("[Voice] TTS engine unavailable.")
+                self.logger.debug("Text-to-speech engine is unavailable")
 
             self.session.speaking = False
-            print("[Voice] Finished")
+            self.logger.debug("Speech complete")
             self.speech_queue.task_done()
 
     def _process_wake_word(self, transcript: str) -> tuple[bool, str]:
@@ -159,7 +161,7 @@ class VoiceEngine:
             }
 
         self.session.start()
-        print("[Voice] Listening...")
+        self.logger.debug("Listening")
 
         if not self._initialize_recognizer():
             return {
@@ -264,7 +266,7 @@ class VoiceEngine:
 
         wake_detected, wake_transcript = self._process_wake_word(transcript)
         if not wake_detected:
-            print("[Voice] Wake word not detected")
+            self.logger.debug("Wake word not detected")
             return {
                 "success": True,
                 "message": "Wake word not detected.",
@@ -275,7 +277,7 @@ class VoiceEngine:
                 "wake_word_detected": False,
             }
 
-        print("[Voice] Wake word detected")
+        self.logger.debug("Wake word detected")
         return {
             "success": True,
             "message": "Voice command captured.",
@@ -331,6 +333,8 @@ class VoiceEngine:
                 self.tts_engine.stop()
             except Exception:
                 pass
+        if self.speech_thread.is_alive() and self.speech_thread is not threading.current_thread():
+            self.speech_thread.join(timeout=2.0)
         return {"success": True, "message": "Voice session stopped."}
 
     def pause(self) -> Dict[str, Any]:

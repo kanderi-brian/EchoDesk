@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import re
 from dataclasses import dataclass, field
@@ -6,6 +7,8 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+from core.app_paths import data_root
 
 
 class PreferenceSource(str, Enum):
@@ -69,7 +72,7 @@ class MemoryEngine:
     and context delivery across application runs.
     """
 
-    DEFAULT_DIR = Path(__file__).resolve().parent.parent / "memory" / "data"
+    DEFAULT_DIR = data_root() / "memory"
     DEFAULT_FILE = "memory.json"
     MAX_HISTORY = 50
 
@@ -84,7 +87,9 @@ class MemoryEngine:
         self._ensure_storage_dir()
         self._payload = self._load_payload()
         self._dirty = False
-        print("[Memory] Loaded")
+        self.logger = logging.getLogger("echodesk.memory")
+        # Loading is intentionally quiet; repeated engine construction should
+        # not flood production console output.
 
     def remember_fact(self, subject: str, value: str) -> str | None:
         """Store or update a memory fact about the user.
@@ -112,7 +117,7 @@ class MemoryEngine:
             self._payload["facts"][existing_index]["value"] = normalized_value.strip()
             self._payload["facts"][existing_index]["updated_at"] = self._timestamp()
             self._write_payload()
-            print("[Memory] Stored Fact")
+            self.logger.debug("Stored fact")
             return f"I updated your {normalized_subject} to {normalized_value}."
 
         fact = {
@@ -123,7 +128,7 @@ class MemoryEngine:
         }
         self._payload["facts"].append(fact)
         self._write_payload()
-        print("[Memory] Stored Fact")
+        self.logger.debug("Stored fact")
         return f"I will remember that your {normalized_subject} is {normalized_value}."
 
     def retrieve_fact(self, subject: str) -> str | None:
@@ -142,7 +147,7 @@ class MemoryEngine:
             return None
 
         value = self._payload["facts"][index]["value"]
-        print("[Memory] Retrieved Fact")
+        self.logger.debug("Retrieved fact")
         return f"Your {normalized_subject} is {value}."
 
     def update_fact(self, subject: str, value: str) -> str | None:
@@ -451,7 +456,7 @@ class MemoryEngine:
             self._mark_dirty()
             if auto_flush:
                 self._write_payload()
-            print("[Learning] Preference updated")
+            self.logger.debug("Preference updated")
             return UserPreference.from_dict(pref)
 
         new_pref = UserPreference(
@@ -467,7 +472,7 @@ class MemoryEngine:
         self._mark_dirty()
         if auto_flush:
             self._write_payload()
-        print("[Learning] Preference learned")
+        self.logger.debug("Preference learned")
         return new_pref
 
     def update_preference(
@@ -492,7 +497,7 @@ class MemoryEngine:
         pref["usage_count"] = int(pref.get("usage_count", 1)) + 1
         pref["last_updated"] = self._timestamp()
         self._write_payload()
-        print("[Learning] Preference updated")
+        self.logger.debug("Preference updated")
         return UserPreference.from_dict(pref)
 
     def remove_preference(self, category: str, key: str) -> bool:
@@ -502,7 +507,7 @@ class MemoryEngine:
 
         self._payload["preferences"].pop(index)
         self._write_payload()
-        print("[Learning] Preference removed")
+        self.logger.debug("Preference removed")
         return True
 
     def get_preference(self, category: str, key: str) -> UserPreference | None:
@@ -598,7 +603,7 @@ class MemoryEngine:
         if not recommendations:
             recommendations.append("I have some learning data, but I need more use to offer personalized recommendations.")
 
-        print("[Learning] Recommendation generated")
+        self.logger.debug("Recommendation generated")
         return recommendations
 
     def _infer_preferences(self, normalized_command: str) -> list[UserPreference]:
@@ -728,7 +733,7 @@ class MemoryEngine:
             json.dump(payload, file, indent=4)
         self._payload = payload
         self._dirty = False
-        print("[Memory] Saved")
+        self.logger.debug("Memory saved")
 
     def flush(self) -> None:
         """Persist any pending memory changes to disk."""

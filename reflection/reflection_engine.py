@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Dict, Optional
 
 from planner.planner import ExecutionPlan
@@ -46,7 +46,7 @@ class ReflectionEngine:
         )
 
         feedback = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             "command": command,
             "success": success,
             "failed_tasks": failed_tasks,

@@ -1,6 +1,6 @@
-import gc
 import os
 import sqlite3
+from contextlib import closing
 import tempfile
 import unittest
 
@@ -26,11 +26,13 @@ class TestMemoryStorage(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertTrue(os.path.exists(self.db_path))
 
-        connection = sqlite3.connect(self.db_path)
-        cursor = connection.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='memory_records'")
-        row = cursor.fetchone()
-        connection.close()
+        with closing(sqlite3.connect(self.db_path)) as connection:
+            cursor = connection.cursor()
+            try:
+                cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='memory_records'")
+                row = cursor.fetchone()
+            finally:
+                cursor.close()
 
         self.assertIsNotNone(row)
 

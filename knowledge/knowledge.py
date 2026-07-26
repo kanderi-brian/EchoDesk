@@ -1,4 +1,5 @@
 import re
+from collections import OrderedDict
 from typing import Any, Dict, Optional
 
 from planner.planner import PlannerEngine
@@ -30,6 +31,7 @@ class KnowledgeEngine:
         self.planner_engine = PlannerEngine()
         self.llm_engine = llm_engine
         self.facts = self.DEFAULT_FACTS.copy()
+        self._explanation_cache: OrderedDict[str, str] = OrderedDict()
 
     def _agent_engine(self):
         try:
@@ -75,7 +77,15 @@ class KnowledgeEngine:
             return local_answer
 
         if self.llm_engine is not None:
-            return self._fallback_to_llm(question, normalized_question)
+            cached = self._explanation_cache.get(normalized_question)
+            if cached:
+                self._explanation_cache.move_to_end(normalized_question)
+                return cached
+            answer = self._fallback_to_llm(question, normalized_question)
+            if answer != self.UNKNOWN_RESPONSE:
+                self._explanation_cache[normalized_question] = answer
+                if len(self._explanation_cache) > 100: self._explanation_cache.popitem(last=False)
+            return answer
 
         return "I don't have enough knowledge available right now."
 
@@ -83,6 +93,15 @@ class KnowledgeEngine:
         exact = self.facts.get(question)
         if exact:
             return exact
+
+        # Explanatory phrasing should resolve the same local concepts as a
+        # direct "what is" question before using a slower LLM fallback.
+        concept = re.sub(r"^(?:explain|define|tell me about)\s+", "", question).strip()
+        if concept:
+            for prefix in ("what is ", "what are "):
+                answer = self.facts.get(prefix + concept)
+                if answer:
+                    return answer
 
         for key, answer in self.facts.items():
             if key in question or question in key:

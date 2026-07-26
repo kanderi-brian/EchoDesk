@@ -8,5 +8,5 @@ class Settings:
     """Application-wide settings for EchoDesk."""
 
     app_name: str = "EchoDesk"
-    version: str = "0.1.0"
+    version: str = "2.0.1"
     debug: bool = False

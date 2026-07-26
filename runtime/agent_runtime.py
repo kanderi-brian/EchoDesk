@@ -1,6 +1,6 @@
 import threading
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Optional
 
 from goal_manager.goal_manager import GoalStatus
@@ -86,7 +86,7 @@ class AgentRuntime:
                 "goal_id": next_goal.id,
                 "status": getattr(result, "status", None) or "UNKNOWN",
                 "result": getattr(result, "final_response", str(result)),
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             }
         )
 

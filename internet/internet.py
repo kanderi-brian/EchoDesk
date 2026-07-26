@@ -3,6 +3,8 @@ import html
 import re
 import urllib.parse
 import urllib.request
+import time
+import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Protocol
 from urllib.error import HTTPError, URLError
@@ -222,10 +224,13 @@ class InternetEngine:
         providers: Optional[List[SearchProvider]] = None,
         timeout: float = 5.0,
         llm_engine: Optional[LLMEngine] = None,
+        retries: int = 2,
     ) -> None:
         self.timeout = float(timeout)
         self.providers = providers if providers is not None else [DuckDuckGoHtmlProvider(), DuckDuckGoInstantAnswerProvider()]
         self.llm_engine = llm_engine
+        self.retries = max(0, int(retries))
+        self.logger = logging.getLogger("echodesk.internet")
 
     def search_structured(self, query: str) -> dict[str, Any]:
         if not isinstance(query, str) or not query.strip():
@@ -237,13 +242,16 @@ class InternetEngine:
 
         errors: List[str] = []
         for provider in self.providers:
-            try:
-                result = provider.search(query, self.timeout)
-            except Exception:
-                errors.append("A search provider failed unexpectedly.")
-                continue
-
-            if result.success:
+            result = None
+            for attempt in range(self.retries + 1):
+                started = time.perf_counter()
+                try: result = provider.search(query, self.timeout)
+                except Exception:
+                    errors.append("A search provider failed unexpectedly."); result = None
+                self.logger.info("provider=%s attempt=%d network_latency=%.3fs", type(provider).__name__, attempt + 1, time.perf_counter() - started)
+                if result is not None and result.success: break
+                if attempt < self.retries: time.sleep(0.05 * (attempt + 1))
+            if result is not None and result.success:
                 output: dict[str, Any] = {
                     "status": "success",
                     "query": query,
@@ -257,7 +265,7 @@ class InternetEngine:
                         output["summary"] = self._summarize_text_with_llm(output["summary"])
                 return output
 
-            errors.append(result.error or "The search provider did not return a usable result.")
+            if result is not None: errors.append(result.error or "The search provider did not return a usable result.")
 
         return {
             "status": "failed",

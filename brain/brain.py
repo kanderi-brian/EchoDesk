@@ -109,6 +109,7 @@ class EchoBrain:
         self.capture = None
         self.reader = None
         self.analyzer = None
+        self.vision_engine = None
 
         # configure logging once per process
         setup_logging()
@@ -731,6 +732,9 @@ class EchoBrain:
                 final_response = memory_response
                 engines_used = ["Memory"]
             elif isinstance(route_result, str) and route_result.lower() in {
+                "conversation",
+                "coding",
+                "desktop",
                 "greeting",
                 "internet",
                 "knowledge",
@@ -807,6 +811,15 @@ class EchoBrain:
         return final_response
 
     def _handle_legacy_route(self, route: str, command: str) -> tuple[str, str]:
+        if route == "conversation":
+            return self._llm_fallback(command), "LLM"
+
+        if route == "coding":
+            return self._coding_fallback(command), "LLM"
+
+        if route == "desktop":
+            return self._execute_desktop_command(command), "DesktopAutomation"
+
         if route == "greeting":
             if self.llm_engine is not None:
                 return self._llm_fallback(command), "LLM"
@@ -845,6 +858,16 @@ class EchoBrain:
             return "I couldn't process the memory command.", "Memory"
 
         if route == "vision":
+            if self.capture is None and self.reader is None and self.analyzer is None:
+                try:
+                    from vision.vision_engine import VisionEngine
+                    self.vision_engine = self.vision_engine or VisionEngine()
+                    result = self.vision_engine.analyze()
+                    return str(getattr(result, "summary", result)), "Vision"
+                except Exception:
+                    if self.llm_engine is not None:
+                        return self._llm_fallback(command), "LLM"
+                    return "Vision processing failed.", "Vision"
             self.load_vision()
             try:
                 image = self.capture.take_screenshot()
@@ -877,6 +900,45 @@ class EchoBrain:
                 return "Screenshot capture failed.", "System"
 
         return "I don't understand that request yet.", "System"
+
+    def _coding_fallback(self, command: str) -> str:
+        """Use the existing LLM with a lightweight coding-mode context."""
+        if self.llm_engine is None:
+            return self._llm_fallback(command)
+        try:
+            return self.llm_engine.ask(command, context="Coding mode: provide a practical, safe implementation.")
+        except TypeError:
+            return self.llm_engine.ask(command)
+        except Exception as exc:
+            self.logger.warning("Coding fallback failed: %s", exc)
+            return "The AI assistant is unavailable right now. Please try again later."
+
+    def _execute_desktop_command(self, command: str) -> str:
+        """Dispatch high-confidence desktop requests to existing automation APIs."""
+        if self.desktop_controller is None:
+            from desktop.controller import DesktopController
+            self.desktop_controller = DesktopController()
+        text = command.strip(); normalized = text.casefold()
+        try:
+            if normalized == "screenshot" or "take screenshot" in normalized:
+                result = self.desktop_controller.take_screenshot()
+            else:
+                match = re.match(r"^(?:open|launch|start)\s+(?:application\s+)?(.+)$", text, re.IGNORECASE)
+                if match: result = self.desktop_controller.open_application(match.group(1).strip())
+                else:
+                    match = re.match(r"^(close|minimize|maximize|restore|focus)\s+(.*)$", text, re.IGNORECASE)
+                    if not match: return "Desktop automation could not determine the requested action."
+                    action, target = match.group(1).casefold(), match.group(2).strip()
+                    if target in {"", "this", "window", "this window"}:
+                        active = self.desktop_controller.active_window()
+                        target = active.get("result", {}).get("window", "") if isinstance(active, dict) else ""
+                    methods = {"minimize": "minimize_window", "maximize": "maximize_window", "restore": "restore_window", "focus": "focus_window", "close": "close_window"}
+                    handler = getattr(self.desktop_controller, methods[action])
+                    result = handler(target, confirm=True) if action == "close" else handler(target)
+            return str(result.get("message", result)) if isinstance(result, dict) else str(result)
+        except Exception as exc:
+            self.logger.warning("Desktop automation failed: %s", exc)
+            return f"Desktop automation failed: {exc}"
 
     def _llm_fallback(self, command: str) -> str:
         if self.llm_engine is None:

@@ -6,6 +6,7 @@ import requests
 from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
 
 from .provider import BaseLLMProvider
+from core.config import get_config
 
 
 class OllamaProvider(BaseLLMProvider):
@@ -23,12 +24,34 @@ class OllamaProvider(BaseLLMProvider):
         self,
         model: str = "phi3:latest",
         endpoint: str = "http://localhost:11434/api/generate",
-        timeout: int = 60,
+        timeout: float | None = None,
     ):
         self.model = model
         self.endpoint = endpoint
-        self.timeout = timeout
+        configured_timeout = get_config().get("llm", {}).get("request_timeout", 0)
+        self.timeout = float(configured_timeout if timeout is None else timeout) or None
         self.logger = logging.getLogger("echodesk.llm.ollama_provider")
+
+    @property
+    def health_endpoint(self) -> str:
+        """Return Ollama's inexpensive local health endpoint."""
+        return self.endpoint.rsplit("/api/", 1)[0] + "/api/tags"
+
+    def is_running(self, timeout: float = 0.75) -> bool:
+        """Check the local daemon without exposing connection exceptions to callers."""
+        try:
+            response = requests.get(self.health_endpoint, timeout=timeout)
+            try:
+                return bool(response.ok)
+            finally:
+                response.close()
+        except RequestException:
+            return False
+
+    def _retry_log(self, attempt: int, message: str, *args) -> None:
+        """Keep transient retries out of normal test/application output."""
+        log = self.logger.warning if attempt == self.MAX_RETRIES else self.logger.debug
+        log(message, *args)
 
     def generate(self, prompt: str) -> str:
         """Generate a response from the Ollama server for the given prompt.
@@ -47,7 +70,9 @@ class OllamaProvider(BaseLLMProvider):
             try:
                 self.logger.debug("Ollama request attempt %d", attempt)
                 # Use non-streaming request by default to avoid indefinite iter_lines blocking.
-                response = requests.post(self.endpoint, json=payload, timeout=self.timeout, stream=False)
+                # A None read timeout allows a local model to continue while it
+                # streams/progresses; deployments can set llm.request_timeout.
+                response = requests.post(self.endpoint, json=payload, timeout=self.timeout, stream=True)
                 response.raise_for_status()
 
                 # First, attempt to use iter_lines if available (works with both streaming and
@@ -83,7 +108,7 @@ class OllamaProvider(BaseLLMProvider):
                     return self._parse_response(parsed)
                 except ValueError as e:
                     # Not JSON; return raw text as a fallback
-                    self.logger.warning("Invalid JSON from Ollama on attempt %d: %s", attempt, e)
+                    self._retry_log(attempt, "Invalid JSON from Ollama on attempt %d: %s", attempt, e)
                     # If the server returned empty or whitespace, treat as an error to trigger retry
                     if not resp_text or not isinstance(resp_text, str) or not resp_text.strip():
                         last_error = f"OllamaProvider invalid JSON response: {e}."
@@ -92,27 +117,34 @@ class OllamaProvider(BaseLLMProvider):
 
             except Timeout as error:
                 last_error = f"OllamaProvider timeout error: server did not respond in time."
-                self.logger.warning("Ollama timeout on attempt %d: %s", attempt, error)
+                self._retry_log(attempt, "Ollama timeout on attempt %d: %s", attempt, error)
             except ConnectionError as error:
                 last_error = f"OllamaProvider connection error: {error}."
-                self.logger.warning("Ollama connection error on attempt %d: %s", attempt, error)
+                self._retry_log(attempt, "Ollama connection error on attempt %d: %s", attempt, error)
             except HTTPError as error:
                 status_code = error.response.status_code if error.response is not None else "unknown"
                 reason = error.response.reason if error.response is not None else "unknown"
                 last_error = f"OllamaProvider HTTP error {status_code}: {reason}."
-                self.logger.warning("Ollama HTTP error on attempt %d: %s", attempt, last_error)
+                self._retry_log(attempt, "Ollama HTTP error on attempt %d: %s", attempt, last_error)
                 # For HTTP errors we do not retry normally
                 break
             except RequestException as error:
                 last_error = f"OllamaProvider request error: {error}."
-                self.logger.warning("Ollama request exception on attempt %d: %s", attempt, error)
+                self._retry_log(attempt, "Ollama request exception on attempt %d: %s", attempt, error)
             except ValueError as error:
                 # JSON decode errors bubbled up earlier
                 last_error = f"OllamaProvider invalid JSON response: {error}."
-                self.logger.warning("Ollama invalid JSON on attempt %d: %s", attempt, error)
+                self._retry_log(attempt, "Ollama invalid JSON on attempt %d: %s", attempt, error)
             except Exception as error:
                 last_error = f"OllamaProvider unexpected error: {error}."
-                self.logger.warning("Ollama unexpected error on attempt %d: %s", attempt, error)
+                self._retry_log(attempt, "Ollama unexpected error on attempt %d: %s", attempt, error)
+
+            finally:
+                # Requests owns a socket even for local responses; always return it to the OS.
+                try:
+                    if "response" in locals(): response.close()
+                except Exception:
+                    pass
 
             if attempt < self.MAX_RETRIES:
                 backoff = self.BACKOFF_BASE * (2 ** (attempt - 1))

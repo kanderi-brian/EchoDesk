@@ -9,6 +9,7 @@ from typing import Any
 
 from planner.planner import ExecutionPlan, ExecutionStatus, Task
 from memory_engine.memory_engine import MemoryEngine
+from core.config import get_config
 
 # Heavy engines are imported lazily inside their respective execution methods to
 # reduce startup cost.
@@ -54,6 +55,7 @@ class TaskExecutor:
         plugin_manager: object | None = None,
         retry_limit: int = 2,
         task_timeout: float = 30.0,
+        llm_timeout: float | None = None,
         record_learning: bool = True,
         security_engine: Any | None = None,
     ) -> None:
@@ -69,12 +71,17 @@ class TaskExecutor:
         self.plugin_manager = plugin_manager
         self.retry_limit = max(0, int(retry_limit))
         self.task_timeout = float(task_timeout)
+        # A zero LLM timeout means wait while generation remains active.  This
+        # is intentionally distinct from the generic task timeout.
+        configured = get_config().get("llm", {}).get("task_timeout", 0)
+        self.llm_timeout = float(configured if llm_timeout is None else llm_timeout)
+        self.last_llm_timings: dict[str, float] = {}
         self.record_learning = bool(record_learning)
         self.security_engine = security_engine
 
     def execute_plan(self, plan: ExecutionPlan, command: str) -> ExecutionResult:
         """Execute the provided plan by running tasks sequentially."""
-        print("[Executor] Executing plan")
+        self.logger.debug("Executing plan")
         tasks = plan.tasks if plan.tasks else self._tasks_from_capabilities(plan.required_capabilities)
         engines_used: list[str] = []
         final_outputs: list[str] = []
@@ -84,7 +91,7 @@ class TaskExecutor:
         total_tasks = len(tasks)
 
         for index, task in enumerate(tasks, start=1):
-            print(f"[Task {index}/{total_tasks}] Running {task.capability}")
+            self.logger.debug("Task %d/%d running %s", index, total_tasks, task.capability)
             task.status = ExecutionStatus.RUNNING
             self._report_progress(tasks)
             task_start = time.perf_counter()
@@ -99,11 +106,11 @@ class TaskExecutor:
             else:
                 task.status = ExecutionStatus.FAILED
                 task.error = execution.get("message")
-                print(f"[Retry] Task failed: {task.error}")
+                self.logger.info("Task failed: %s", task.error)
                 self._record_learning(command, task.capability, task.error, False, task_duration)
 
                 if self._task_blocks_remaining(task, tasks[index:]):
-                    print("[Executor] Remaining tasks depend on failed task; halting execution.")
+                    self.logger.info("Remaining tasks depend on a failed task; halting execution.")
                     break
 
             engines_used.append(task.capability)
@@ -125,7 +132,7 @@ class TaskExecutor:
                 return "Memory engine did not understand the request."
             return result
         except Exception as exc:
-            self.logger.exception("Memory execution failed")
+            self.logger.warning("Memory execution failed: %s", exc)
             return "Memory engine failed to process the command." 
 
     def _execute_task(self, task: Task, command: str) -> dict[str, Any]:
@@ -200,7 +207,9 @@ class TaskExecutor:
                 return {"success": False, "message": f"Capability {capability or 'unknown'} is not supported."}
             return {"success": True, "message": handler(command)}
         except Exception as exc:
-            self.logger.exception("Unexpected error during task execution")
+            # Engine failures are part of the normal retry contract. Avoid a
+            # traceback here; the original message remains in task diagnostics.
+            self.logger.warning("Task execution failed for %s: %s", capability or "unknown", exc)
             return {"success": False, "message": str(exc)}
 
     def _execute_task_with_retry(self, task: Task, command: str) -> dict[str, Any]:
@@ -225,17 +234,18 @@ class TaskExecutor:
         return last_result
 
     def _execute_task_with_timeout(self, task: Task, command: str) -> dict[str, Any]:
-        if self.task_timeout <= 0:
+        timeout = self.llm_timeout if str(task.capability).casefold() == "llm" else self.task_timeout
+        if timeout <= 0:
             return self._execute_task(task, command)
 
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         future = executor.submit(self._execute_task, task, command)
         try:
-            return future.result(timeout=self.task_timeout)
+            return future.result(timeout=timeout)
         except concurrent.futures.TimeoutError:
-            self.logger.warning("Task %s timed out after %.1fs", task.capability, self.task_timeout)
+            self.logger.warning("Task %s timed out after %.1fs", task.capability, timeout)
             future.cancel()
-            return {"success": False, "message": f"Task '{task.capability}' timed out after {self.task_timeout:.1f} seconds."}
+            return {"success": False, "message": f"Task '{task.capability}' timed out after {timeout:.1f} seconds."}
         finally:
             # Do not turn a timed-out operation into a blocking wait while
             # leaving the executor context manager. Running work cannot be
@@ -274,7 +284,7 @@ class TaskExecutor:
         failed = sum(1 for task in tasks if task.status == ExecutionStatus.FAILED)
         running = sum(1 for task in tasks if task.status == ExecutionStatus.RUNNING)
         remaining = sum(1 for task in tasks if task.status == ExecutionStatus.PENDING)
-        print(f"[Executor] Progress - Completed: {completed}, Running: {running}, Failed: {failed}, Remaining: {remaining}")
+        self.logger.debug("Progress: completed=%d running=%d failed=%d remaining=%d", completed, running, failed, remaining)
 
     def _build_task_logs(self, tasks: list[Task]) -> list[str]:
         logs = []
@@ -290,7 +300,12 @@ class TaskExecutor:
         if self._knowledge_engine is None:
             from knowledge.knowledge import KnowledgeEngine
 
-            self._knowledge_engine = KnowledgeEngine()
+            self._knowledge_engine = KnowledgeEngine(llm_engine=self._llm_engine)
+        elif getattr(self._knowledge_engine, "llm_engine", None) is None:
+            if self._llm_engine is None:
+                from llm.engine import LLMEngine
+                self._llm_engine = LLMEngine()
+            self._knowledge_engine.llm_engine = self._llm_engine
         try:
             result = self._knowledge_engine.search(command)
             if result is None:
@@ -407,10 +422,13 @@ class TaskExecutor:
 
             total_context_len = len(full_context or "")
             self.logger.debug("LLM prompt size (approx): %d", total_context_len + len(command or ""))
-            t0 = time.perf_counter()
+            queued_at = time.perf_counter()
+            queue_time = time.perf_counter() - queued_at
+            inference_started = time.perf_counter()
             result = self._llm_engine.ask(command, context=full_context)
-            t1 = time.perf_counter()
-            self.logger.info("LLM response time: %.3fs", (t1 - t0))
+            inference_time = time.perf_counter() - inference_started
+            self.last_llm_timings = {"queue_time": queue_time, "inference_time": inference_time, "total_response_time": queue_time + inference_time}
+            self.logger.info("LLM queue_time=%.3fs inference_time=%.3fs total_response_time=%.3fs", queue_time, inference_time, queue_time + inference_time)
             self.logger.debug("LLM context length: %d, prompt length: %d", len(full_context or ""), len(command or ""))
 
             if result is None:

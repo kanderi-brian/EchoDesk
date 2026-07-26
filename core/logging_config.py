@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from .config import get_config
+from .app_paths import ensure_data_directories
 
 
 def setup_logging(level: Optional[str] = None) -> None:
@@ -13,7 +14,7 @@ def setup_logging(level: Optional[str] = None) -> None:
     level_name = (level or log_cfg.get("level") or "INFO").upper()
     level_val = getattr(logging, level_name, logging.INFO)
 
-    log_dir = Path(log_cfg.get("dir", "logs"))
+    log_dir = Path(log_cfg["dir"]) if log_cfg.get("dir") else ensure_data_directories()["logs"]
     log_dir.mkdir(parents=True, exist_ok=True)
 
     logger = logging.getLogger("echodesk")
@@ -43,3 +44,20 @@ def setup_logging(level: Optional[str] = None) -> None:
 
     # propagate to root so other modules use the same handlers by name
     logging.getLogger().setLevel(level_val)
+
+
+def category_logger(category: str) -> logging.Logger:
+    """Return a rotating production logger dedicated to one support category."""
+    setup_logging()
+    logger = logging.getLogger(f"echodesk.{category}")
+    if any(getattr(handler, "_echodesk_category", None) == category for handler in logger.handlers):
+        return logger
+    cfg = get_config().get("logging", {})
+    handler = logging.handlers.RotatingFileHandler(
+        ensure_data_directories()["logs"] / f"{category}.log",
+        maxBytes=int(cfg.get("max_bytes", 1048576)), backupCount=int(cfg.get("backup_count", 5)), encoding="utf-8",
+    )
+    handler._echodesk_category = category  # type: ignore[attr-defined]
+    handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+    logger.addHandler(handler); logger.setLevel(getattr(logging, str(cfg.get("level", "INFO")).upper(), logging.INFO))
+    return logger

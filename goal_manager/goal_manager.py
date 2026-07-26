@@ -5,8 +5,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from core.app_paths import data_root
 
-DEFAULT_GOAL_FILE = Path(__file__).resolve().parent / "goals.json"
+
+DEFAULT_GOAL_FILE = data_root() / "goals.json"
 
 
 class GoalStatus:

@@ -22,10 +22,22 @@ class TestLLMEngineModule(unittest.TestCase):
 
         self.assertIsInstance(engine.provider, OllamaProvider)
         self.assertEqual(engine.provider.model, "phi3:latest")
-        self.assertEqual(engine.provider.timeout, 60)
+        self.assertIsNone(engine.provider.timeout)
 
 
 class TestOllamaProviderModule(unittest.TestCase):
+
+    @patch("llm.ollama_provider.requests.get")
+    def test_is_running_returns_false_without_daemon(self, mock_get):
+        from requests.exceptions import ConnectionError
+        mock_get.side_effect = ConnectionError("refused")
+        self.assertFalse(OllamaProvider().is_running())
+
+    @patch("llm.ollama_provider.requests.get")
+    def test_is_running_closes_health_response(self, mock_get):
+        response = Mock(); response.ok = True; mock_get.return_value = response
+        self.assertTrue(OllamaProvider().is_running())
+        response.close.assert_called_once()
 
     @patch("llm.ollama_provider.requests.post")
     def test_generate_returns_response_text(self, mock_post):

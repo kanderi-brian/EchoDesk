@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -64,13 +64,18 @@ class Scheduler:
             json.dump([entry.to_dict() for entry in self.entries.values()], handle, indent=2)
 
     def _timestamp(self, dt: Optional[datetime] = None) -> str:
-        return (dt or datetime.utcnow()).isoformat() + "Z"
+        return self._as_utc(dt or datetime.now(UTC)).isoformat().replace("+00:00", "Z")
+
+    @staticmethod
+    def _as_utc(value: datetime) -> datetime:
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
     def _parse_datetime(self, value: Any) -> datetime:
         if isinstance(value, datetime):
             return value
         if isinstance(value, str):
-            return datetime.fromisoformat(value.rstrip("Z"))
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            return self._as_utc(parsed)
         raise ValueError("run_at must be a datetime or ISO timestamp string")
 
     def schedule_goal(
@@ -84,7 +89,7 @@ class Scheduler:
         entry = ScheduleEntry(
             id=str(uuid.uuid4()),
             goal_id=goal_id,
-            run_at=run_time.isoformat() + "Z",
+            run_at=self._timestamp(run_time),
             recurrence=recurrence,
             metadata=metadata or {},
         )
@@ -100,7 +105,7 @@ class Scheduler:
         return False
 
     def get_due_entries(self, now: Optional[datetime] = None) -> List[ScheduleEntry]:
-        now = now or datetime.utcnow()
+        now = self._as_utc(now or datetime.now(UTC))
         due = []
         for entry in self.entries.values():
             if not entry.enabled:
@@ -113,9 +118,9 @@ class Scheduler:
     def _next_run(self, entry: ScheduleEntry) -> Optional[str]:
         run_at = self._parse_datetime(entry.run_at)
         if entry.recurrence == "daily":
-            return (run_at + timedelta(days=1)).isoformat() + "Z"
+            return self._timestamp(run_at + timedelta(days=1))
         if entry.recurrence == "weekly":
-            return (run_at + timedelta(weeks=1)).isoformat() + "Z"
+            return self._timestamp(run_at + timedelta(weeks=1))
         if entry.recurrence == "once":
             return None
         return None
@@ -131,7 +136,7 @@ class Scheduler:
 
             if goal.status in (GoalStatus.Pending, GoalStatus.Paused, GoalStatus.Failed):
                 goal.status = GoalStatus.Pending
-                goal.updated_at = datetime.utcnow().isoformat() + "Z"
+                goal.updated_at = self._timestamp()
                 goal_manager.save()
                 activated.append(entry)
 

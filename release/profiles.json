@@ -1,0 +1,5 @@
+{
+  "development": {"logging": {"level": "DEBUG"}, "plugins": {"lazy_load": false}, "security": {"policy": "balanced"}},
+  "testing": {"logging": {"level": "WARNING"}, "plugins": {"lazy_load": true}, "security": {"policy": "safe"}},
+  "production": {"logging": {"level": "INFO"}, "plugins": {"lazy_load": true}, "security": {"policy": "balanced"}}
+}

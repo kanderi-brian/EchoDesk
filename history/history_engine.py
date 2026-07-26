@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from core.app_paths import data_root
+
 
 class HistoryEngine:
-    DEFAULT_HISTORY_FILE = Path(__file__).resolve().parent / "history.json"
+    DEFAULT_HISTORY_FILE = data_root() / "history.json"
 
     def __init__(self, history_file: Optional[Path] = None):
         self.history_file = Path(history_file) if history_file is not None else self.DEFAULT_HISTORY_FILE
@@ -31,7 +33,7 @@ class HistoryEngine:
 
     def _record_event(self, event_type: str, payload: Dict[str, Any]) -> None:
         event = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             "event_type": event_type,
             "payload": payload,
         }
